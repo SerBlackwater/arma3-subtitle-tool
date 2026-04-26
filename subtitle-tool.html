@@ -1,0 +1,3409 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arma 3 Subtitle Preview &amp; Generator</title>
+  <style>
+    /* ── Reset & Base ── */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #0d0d0d;
+      --panel: #1a1a1a;
+      --panel-border: #2a2a2a;
+      --text: #ccc;
+      --text-bright: #eee;
+      --accent: #3399FF;
+      --accent-dim: #264d80;
+      --danger: #ff4444;
+      --warn: #ffaa00;
+      --ok: #44cc44;
+      --input-bg: #222;
+      --input-border: #444;
+    }
+
+    html,
+    body {
+      height: 100%;
+      font-family: 'Segoe UI', Rajdhani, 'Exo 2', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    /* ── Layout ── */
+    .app {
+      display: flex;
+      height: 100vh;
+      gap: 0;
+    }
+
+    .sidebar {
+      width: 380px;
+      min-width: 320px;
+      background: var(--panel);
+      border-right: 1px solid var(--panel-border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .sidebar-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 14px;
+    }
+
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      gap: 12px;
+      overflow: hidden;
+    }
+
+    /* ── Sidebar Sections ── */
+    .section {
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--accent);
+      margin-bottom: 6px;
+      font-weight: 700;
+      border-bottom: 1px solid var(--panel-border);
+      padding-bottom: 3px;
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .section-title .caret {
+      font-size: 9px;
+      transition: transform 0.2s;
+    }
+
+    .section-title .caret.collapsed {
+      transform: rotate(-90deg);
+    }
+
+    .section-body {
+      overflow: hidden;
+      transition: max-height 0.25s ease, opacity 0.2s;
+      max-height: 800px;
+      opacity: 1;
+    }
+
+    .section-body.collapsed {
+      max-height: 0;
+      opacity: 0;
+      padding: 0;
+      margin: 0;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      color: var(--text);
+      margin-bottom: 3px;
+      margin-top: 6px;
+    }
+
+    label:first-of-type {
+      margin-top: 0;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    textarea,
+    select {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      color: var(--text-bright);
+      padding: 6px 8px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-family: inherit;
+    }
+
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    textarea:focus,
+    select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    input[type="color"] {
+      width: 36px;
+      height: 28px;
+      border: 1px solid var(--input-border);
+      background: var(--input-bg);
+      border-radius: 4px;
+      cursor: pointer;
+      padding: 2px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+    }
+
+    .row>* {
+      flex: 1;
+    }
+
+    .row-tight {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      padding: 7px 14px;
+      border: 1px solid var(--panel-border);
+      background: var(--input-bg);
+      color: var(--text-bright);
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-family: inherit;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .btn:hover {
+      background: #333;
+      border-color: var(--accent);
+    }
+
+    .btn-accent {
+      background: var(--accent-dim);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .btn-accent:hover {
+      background: var(--accent);
+    }
+
+    .btn-danger {
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+
+    .btn-danger:hover {
+      background: #441111;
+    }
+
+    .btn-small {
+      padding: 4px 8px;
+      font-size: 11px;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* ── Preview Area ── */
+    .preview-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 0;
+    }
+
+    .preview-frame {
+      position: relative;
+      width: 100%;
+      max-width: 960px;
+      aspect-ratio: 16 / 9;
+      background: #000;
+      border: 1px solid var(--panel-border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .preview-bg {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, #1a2a1a 0%, #0a0f0a 60%, #000 100%);
+      opacity: 0.4;
+    }
+
+    .subtitle-display {
+      position: absolute;
+      z-index: 5;
+      text-align: center;
+      width: 80%;
+      opacity: 0;
+      transition: opacity 0.15s;
+      cursor: move;
+      align-items: baseline;
+      line-height: 1.2;
+    }
+
+    .subtitle-display.dragging {
+      outline: 1.5px dashed rgba(255, 255, 255, 0.5);
+      outline-offset: 4px;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.15);
+    }
+
+    .subtitle-display.selected {
+      outline: 1.5px dashed rgba(255, 255, 255, 0.4);
+      outline-offset: 4px;
+    }
+
+    .resize-handle {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid rgba(0, 0, 0, 0.4);
+      z-index: 10;
+      display: none;
+      pointer-events: auto;
+    }
+
+    .subtitle-display.selected .resize-handle,
+    .subtitle-display.dragging .resize-handle {
+      display: block;
+    }
+
+    .resize-handle.rh-tl {
+      top: -8px;
+      left: -8px;
+      cursor: nw-resize;
+    }
+
+    .resize-handle.rh-tr {
+      top: -8px;
+      right: -8px;
+      cursor: ne-resize;
+    }
+
+    .resize-handle.rh-bl {
+      bottom: -8px;
+      left: -8px;
+      cursor: sw-resize;
+    }
+
+    .resize-handle.rh-br {
+      bottom: -8px;
+      right: -8px;
+      cursor: se-resize;
+    }
+
+    .subtitle-display.visible {
+      opacity: 1;
+    }
+
+    .subtitle-display.fade-in {
+      animation: fadeIn 1s ease forwards;
+    }
+
+    .subtitle-display.fade-out {
+      animation: fadeOut 0.5s ease forwards;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    @keyframes fadeOut {
+      from {
+        opacity: 1;
+      }
+
+      to {
+        opacity: 0;
+      }
+    }
+
+    .subtitle-title {
+      font-weight: 600;
+      color: #3399FF;
+      font-size: 1.3em;
+      text-shadow: 1px 2px 4px rgba(0, 0, 0, 0.8);
+      line-height: 1.2;
+    }
+
+    .subtitle-text {
+      font-weight: 600;
+      color: #FFFFFF;
+      font-size: 1.1em;
+      text-shadow: 1px 2px 4px rgba(0, 0, 0, 0.8);
+      line-height: 1.3;
+      transition: opacity 0.3s ease;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .subtitle-text.text-swap {
+      animation: textSwap 0.35s ease;
+    }
+
+    @keyframes textSwap {
+      0% {
+        opacity: 0.3;
+        transform: translateY(3px);
+      }
+
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Side-title style (right-aligned, typewriter) */
+    .subtitle-display.side-title {
+      text-align: right;
+      width: 60%;
+    }
+
+    .subtitle-display.side-title .subtitle-title {
+      font-weight: 700;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.9);
+    }
+
+    .subtitle-display.side-title .subtitle-text {
+      font-size: 1.5em;
+      overflow: hidden;
+      white-space: nowrap;
+      border-right: 2px solid rgba(255, 255, 255, 0.6);
+      animation: typing 2s steps(40, end), blink-caret 0.5s step-end infinite;
+      display: inline-block;
+      max-width: 100%;
+    }
+
+    @keyframes typing {
+      from {
+        width: 0;
+      }
+
+      to {
+        width: 100%;
+      }
+    }
+
+    @keyframes blink-caret {
+      50% {
+        border-color: transparent;
+      }
+    }
+
+    .preview-label {
+      position: absolute;
+      top: 8px;
+      left: 10px;
+      font-size: 10px;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      z-index: 10;
+    }
+
+    /* ── Advanced Toggle (nested collapsible) ── */
+    .advanced-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      color: #666;
+      cursor: pointer;
+      user-select: none;
+      margin-top: 8px;
+      padding: 3px 0;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .advanced-toggle:hover {
+      color: var(--accent);
+    }
+
+    .advanced-toggle .adv-arrow {
+      font-size: 8px;
+      transition: transform 0.2s;
+      display: inline-block;
+    }
+
+    .advanced-toggle .adv-arrow.open {
+      transform: rotate(90deg);
+    }
+
+    .advanced-body {
+      overflow: hidden;
+      max-height: 0;
+      opacity: 0;
+      transition: max-height 0.25s ease, opacity 0.2s;
+    }
+
+    .advanced-body.open {
+      max-height: 600px;
+      opacity: 1;
+    }
+
+    /* ── Arma UI Overlays ── */
+    .arma-ui-overlay {
+      position: absolute;
+      z-index: 1;
+      pointer-events: none;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    .arma-ui-overlay.hidden {
+      display: none;
+    }
+
+    .arma-hud-squad-list {
+      bottom: 5%;
+      left: 56%;
+      font-size: 0.45em;
+      line-height: 1.4;
+      color: rgba(200, 220, 255, 0.2);
+      display: flex;
+      gap: 16px;
+    }
+
+    .arma-hud-squad-list .sl-col {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    .arma-hud-squad-list .sl-row {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .arma-hud-squad-list .sl-dot {
+      color: rgba(255, 255, 255, 0.18);
+      font-size: 0.7em;
+    }
+
+    .arma-hud-squad-list .sl-name {
+      color: rgba(200, 220, 255, 0.22);
+    }
+
+    .arma-hud-compass {
+      bottom: 5%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 44px;
+      height: 44px;
+      position: absolute;
+      border: 1.5px solid rgba(255, 255, 255, 0.12);
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.15);
+    }
+
+    .arma-hud-compass::after {
+      content: '172';
+      position: absolute;
+      top: -14px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.55em;
+      color: rgba(255, 255, 255, 0.2);
+      letter-spacing: 1px;
+    }
+
+    .arma-hud-compass .comp-needle {
+      position: absolute;
+      top: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 1px;
+      height: 10px;
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .arma-hud-compass .comp-n {
+      position: absolute;
+      bottom: 4px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.4em;
+      color: rgba(255, 255, 255, 0.22);
+      font-weight: 700;
+    }
+
+    .arma-hud-weapon {
+      top: 1.5%;
+      right: 1.5%;
+      text-align: right;
+      font-size: 0.55em;
+      color: rgba(255, 255, 255, 0.18);
+    }
+
+    .arma-hud-weapon .wpn-name {
+      font-size: 0.85em;
+      color: rgba(255, 255, 255, 0.15);
+    }
+
+    .arma-hud-weapon .wpn-ammo {
+      font-size: 2em;
+      letter-spacing: 1px;
+      color: rgba(255, 255, 255, 0.22);
+      margin: 1px 0;
+    }
+
+    .arma-hud-weapon .wpn-detail {
+      font-size: 0.8em;
+      color: rgba(255, 255, 255, 0.12);
+    }
+
+    .arma-hud-gps {
+      bottom: 26%;
+      right: 1.5%;
+      width: 60px;
+      height: 60px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(0, 40, 0, 0.15);
+    }
+
+    .arma-hud-gps .gps-label {
+      position: absolute;
+      top: -10px;
+      left: 0;
+      right: 0;
+      font-size: 0.4em;
+      color: rgba(255, 255, 255, 0.12);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .arma-hud-chat {
+      bottom: 14%;
+      left: 1.5%;
+      font-size: 0.45em;
+      line-height: 1.6;
+      color: rgba(200, 200, 200, 0.22);
+    }
+
+    .arma-hud-chat .ch-side {
+      color: rgba(100, 180, 255, 0.25);
+    }
+
+    .arma-hud-chat .ch-group {
+      color: rgba(100, 255, 100, 0.2);
+    }
+
+    .arma-hud-chat .ch-global {
+      color: rgba(220, 220, 220, 0.18);
+    }
+
+    .arma-hud-squad-bar {
+      bottom: 2%;
+      left: -0.5%;
+      display: flex;
+      gap: 1px;
+      font-size: 0.38em;
+    }
+
+    .arma-hud-squad-bar .sb-slot {
+      width: 30px;
+      text-align: center;
+      color: rgba(200, 220, 255, 0.18);
+      padding-top: 2px;
+    }
+
+    .arma-hud-squad-bar .sb-slot .sb-num {
+      font-size: 0.85em;
+      color: rgba(255, 255, 255, 0.1);
+    }
+
+    .arma-hud-squad-bar .sb-slot .sb-icon {
+      font-size: 1em;
+      margin: 1px 0;
+    }
+
+    .arma-hud-squad-bar .sb-slot .sb-name {
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    .arma-hud-squad-bar .sb-slot:first-child {
+      color: rgba(100, 200, 255, 0.25);
+    }
+
+    /* ── Preset Styles ── */
+    /*
+       Inline presets (COD, Halo variants) use a two-column flex layout:
+       speaker (right-aligned, fixed 35%) | subtitle (left-aligned, 65%).
+       This keeps the speaker name anchored — it never shifts when subtitle
+       text changes between timeline entries.
+    */
+
+    /* COD: Speaker: text on same line, small text, no bg */
+    .subtitle-display.preset-cod-ally,
+    .subtitle-display.preset-cod-enemy {
+      background: none;
+      display: flex;
+    }
+
+    .subtitle-display.preset-cod-ally .subtitle-title,
+    .subtitle-display.preset-cod-enemy .subtitle-title {
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      flex: 0 0 45%;
+      text-align: right;
+    }
+
+    .subtitle-display.preset-cod-ally .subtitle-title::after,
+    .subtitle-display.preset-cod-enemy .subtitle-title::after {
+      content: ':';
+    }
+
+    .subtitle-display.preset-cod-ally .subtitle-text,
+    .subtitle-display.preset-cod-enemy .subtitle-text {
+      font-weight: 400;
+      flex: 1;
+      text-align: left;
+      margin-left: 0.3em;
+    }
+
+    /* Wingman: callsign title centered top, subtitle italic below, no bg */
+    .subtitle-display.preset-wingman .subtitle-title {
+      font-weight: 600;
+    }
+
+    .subtitle-display.preset-wingman .subtitle-text {
+      font-weight: 400;
+    }
+
+    .subtitle-display.preset-wingman {
+      text-align: center;
+      background: none;
+    }
+
+    /* Halo: ALL CAPS bold title + colon inline, dark translucent bar */
+    .subtitle-display.preset-halo {
+      background: rgba(0, 0, 0, 0.45);
+      padding: 5px 16px;
+      display: flex;
+    }
+
+    .subtitle-display.preset-halo .subtitle-title {
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      flex: 0 0 45%;
+      text-align: right;
+    }
+
+    .subtitle-display.preset-halo .subtitle-title::after {
+      content: ':';
+    }
+
+    .subtitle-display.preset-halo .subtitle-text {
+      font-weight: 400;
+      flex: 1;
+      text-align: left;
+      margin-left: 0.3em;
+    }
+
+    /* Halo AI: Cortana-style holographic — italic, glow, no bg */
+    .subtitle-display.preset-halo-ai {
+      background: none;
+      display: flex;
+    }
+
+    .subtitle-display.preset-halo-ai .subtitle-title {
+      font-weight: 400;
+      letter-spacing: 1px;
+      text-shadow: 0 0 8px rgba(123,104,238,0.6), 1px 2px 4px rgba(0,0,0,0.8);
+      flex: 0 0 45%;
+      text-align: right;
+    }
+
+    .subtitle-display.preset-halo-ai .subtitle-title::after {
+      content: ':';
+    }
+
+    .subtitle-display.preset-halo-ai .subtitle-text {
+      font-weight: 300;
+      text-shadow: 0 0 6px rgba(173,216,230,0.5), 1px 2px 4px rgba(0,0,0,0.8);
+      flex: 1;
+      text-align: left;
+      margin-left: 0.3em;
+    }
+
+    /* Halo Covenant: alien menace — bold uppercase, purple glow, dark bar */
+    .subtitle-display.preset-halo-covenant {
+      padding: 5px 16px;
+      display: flex;
+    }
+
+    .subtitle-display.preset-halo-covenant .subtitle-title {
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-shadow: 0 0 10px rgba(123,104,238,0.7), 0 0 20px rgba(75,0,130,0.4), 1px 2px 4px rgba(0,0,0,0.9);
+      flex: 0 0 45%;
+      text-align: right;
+    }
+
+    .subtitle-display.preset-halo-covenant .subtitle-title::after {
+      content: ':';
+    }
+
+    .subtitle-display.preset-halo-covenant .subtitle-text {
+      font-weight: 600;
+      text-shadow: 0 0 8px rgba(173,216,230,0.5), 0 0 16px rgba(75,0,130,0.3), 1px 2px 4px rgba(0,0,0,0.9);
+      flex: 1;
+      text-align: left;
+      margin-left: 0.3em;
+    }
+
+    /* ── Custom Preset Row ── */
+    .preset-row {
+      display: flex;
+      gap: 4px;
+      align-items: stretch;
+    }
+
+    .preset-row select {
+      flex: 1;
+    }
+
+    .preset-row .btn {
+      padding: 4px 6px;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    /* ── Audio Bar ── */
+    .audio-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: 4px;
+      padding: 8px 12px;
+    }
+
+    .audio-bar audio {
+      flex: 1;
+      height: 32px;
+      max-width: 300px;
+    }
+
+    .audio-bar .time-display {
+      font-size: 12px;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+      min-width: 80px;
+    }
+
+    /* ── Timeline ── */
+    .timeline-container {
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: 4px;
+      max-height: 240px;
+      overflow-y: auto;
+    }
+
+    .timeline-header {
+      display: grid;
+      grid-template-columns: 32px 60px 50px 1fr 1fr 60px 28px;
+      gap: 4px;
+      padding: 6px 8px;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #666;
+      border-bottom: 1px solid var(--panel-border);
+      position: sticky;
+      top: 0;
+      background: var(--panel);
+      z-index: 1;
+    }
+
+    .timeline-entry {
+      display: grid;
+      grid-template-columns: 32px 60px 50px 1fr 1fr 60px 28px;
+      gap: 4px;
+      padding: 4px 8px;
+      align-items: center;
+      border-bottom: 1px solid #1f1f1f;
+      font-size: 12px;
+    }
+
+    .timeline-entry:hover {
+      background: #1f1f1f;
+    }
+
+    .timeline-entry.active {
+      background: #1a2a3a;
+      border-left: 2px solid var(--accent);
+    }
+
+    .timeline-entry input {
+      padding: 3px 5px;
+      font-size: 12px;
+    }
+
+    .timeline-entry .entry-num {
+      color: #555;
+      font-size: 11px;
+      text-align: center;
+    }
+
+    .timeline-entry .remove-btn {
+      background: none;
+      border: none;
+      color: #555;
+      cursor: pointer;
+      font-size: 14px;
+      padding: 2px;
+      line-height: 1;
+    }
+
+    .timeline-entry .remove-btn:hover {
+      color: var(--danger);
+    }
+
+    /* ── Speed Indicators ── */
+    .speed-ok {
+      color: var(--ok);
+    }
+
+    .speed-warn {
+      color: var(--warn);
+    }
+
+    .speed-danger {
+      color: var(--danger);
+    }
+
+    .speed-indicator {
+      font-size: 10px;
+      font-weight: 700;
+      text-align: center;
+      min-width: 50px;
+    }
+
+    .length-warn {
+      font-size: 9px;
+      color: var(--warn);
+      margin-top: 1px;
+    }
+
+    /* ── Code Output ── */
+    .code-output {
+      background: #111;
+      border: 1px solid var(--panel-border);
+      border-radius: 4px;
+      padding: 12px;
+      font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+      font-size: 12px;
+      color: #9dcc9d;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 200px;
+      overflow-y: auto;
+      display: none;
+    }
+
+    .code-output.visible {
+      display: block;
+    }
+
+    /* ── Transcript Area ── */
+    .transcript-area {
+      min-height: 80px;
+    }
+
+    /* ── Tabs ── */
+    .tab-bar {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--panel-border);
+      margin-bottom: 10px;
+    }
+
+    .tab-btn {
+      padding: 6px 14px;
+      border: 1px solid transparent;
+      border-bottom: none;
+      background: transparent;
+      color: #666;
+      cursor: pointer;
+      font-size: 12px;
+      font-family: inherit;
+      border-radius: 4px 4px 0 0;
+      transition: color 0.15s;
+    }
+
+    .tab-btn:hover {
+      color: var(--text);
+    }
+
+    .tab-btn.active {
+      color: var(--accent);
+      border-color: var(--panel-border);
+      background: var(--panel);
+      border-bottom: 1px solid var(--panel);
+      margin-bottom: -1px;
+    }
+
+    .tab-panel {
+      display: none;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    /* ── History Tab ── */
+    #historyList {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 420px;
+      overflow-y: auto;
+    }
+
+    #historyEmpty {
+      color: #555;
+      font-size: 12px;
+      text-align: center;
+      padding: 24px 0;
+    }
+
+    .hist-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: #1a1a1a;
+      border: 1px solid var(--panel-border);
+      border-radius: 4px;
+      padding: 7px 10px;
+      font-size: 12px;
+    }
+
+    .hist-card:hover {
+      background: #1f1f1f;
+    }
+
+    .hist-card-info {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .hist-card-label {
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .hist-card-meta {
+      color: #666;
+      font-size: 11px;
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .hist-filename {
+      color: var(--accent);
+    }
+
+    .hist-card-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex: 0 0 auto;
+    }
+
+    .btn-small {
+      padding: 3px 8px;
+      font-size: 11px;
+    }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--accent);
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 4px;
+      font-size: 13px;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.3s;
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #333;
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #555;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 800px) {
+      .app {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        width: 100%;
+        min-width: 0;
+        max-height: 50vh;
+        border-right: none;
+        border-bottom: 1px solid var(--panel-border);
+      }
+
+      .main {
+        padding: 8px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="app">
+    <!-- ───── SIDEBAR ───── -->
+    <div class="sidebar">
+      <div class="sidebar-scroll">
+
+        <!-- Title -->
+        <div style="text-align:center; margin-bottom:10px;">
+          <div style="font-size:14px; font-weight:700; color:var(--accent);">ARMA 3 SUBTITLE TOOL</div>
+          <div style="font-size:10px; color:#555; margin-top:2px;">Preview &bull; Pace &bull; Generate</div>
+        </div>
+
+        <!-- ── STYLE ── -->
+        <div class="section">
+          <div class="section-title" onclick="toggleSection(this)">Style <span class="caret">▼</span></div>
+          <div class="section-body">
+            <label>Preset</label>
+            <div class="preset-row">
+              <select id="stylePreset" onchange="applyPreset()">
+                <optgroup label="Arma 3 Sides">
+                  <option value="blufor" selected>BLUFOR</option>
+                  <option value="opfor">OPFOR</option>
+                  <option value="indfor">INDFOR</option>
+                  <option value="civilian">Civilian</option>
+                  <option value="unknown">Unknown</option>
+                </optgroup>
+                <optgroup label="Halo">
+                  <option value="halo">UNSC</option>
+                  <option value="halo-covenant">Covenenant</option>
+                  <option value="halo-ai">AI</option>
+                </optgroup>
+                <optgroup label="Call of Duty">
+                  <option value="cod-ally">Call of Duty (Ally)</option>
+                  <option value="cod-enemy">Call of Duty (Enemy)</option>
+                </optgroup>
+                <optgroup label="Project Wingman">
+                  <option value="wingman-ally">Project Wingman (Ally)</option>
+                  <option value="wingman-enemy">Project Wingman (Enemy)</option>
+                </optgroup>
+                <optgroup id="customPresetsGroup" label="Custom Presets"></optgroup>
+                <option value="custom">Custom</option>
+              </select>
+              <button class="btn" onclick="saveCustomPreset()" title="Save current settings as preset">💾</button>
+              <button class="btn btn-danger" onclick="deleteCustomPreset()" title="Delete selected custom preset">🗑</button>
+            </div>
+
+            <div class="row" style="margin-top:6px;">
+              <div>
+                <label>Title Color</label>
+                <div class="row-tight">
+                  <input type="color" id="titleColor" value="#3399FF">
+                  <input type="text" id="titleColorHex" value="#3399FF" style="width:70px;" maxlength="7">
+                </div>
+              </div>
+              <div>
+                <label>Sub Color</label>
+                <div class="row-tight">
+                  <input type="color" id="subtitleColor" value="#FFFFFF">
+                  <input type="text" id="subtitleColorHex" value="#FFFFFF" style="width:70px;" maxlength="7">
+                </div>
+              </div>
+            </div>
+
+            <label>Position</label>
+            <select id="positionPreset" onchange="applyPositionPreset()">
+              <option value="center-bottom">Center Bottom</option>
+              <option value="center-top">Center Top</option>
+              <option value="left-bottom">Left Bottom</option>
+              <option value="right-center">Right Center (Side Title)</option>
+              <option value="custom">Custom (drag on preview)</option>
+            </select>
+
+            <div class="advanced-toggle" onclick="toggleAdvanced(this)">
+              <span class="adv-arrow">&#9654;</span> Advanced
+            </div>
+            <div class="advanced-body">
+              <label>Font</label>
+              <select id="fontSelect" onchange="updatePreviewStyle()">
+                <option value="PuristaSemibold">PuristaSemibold (Arma default)</option>
+                <option value="PuristaMedium">PuristaMedium</option>
+                <option value="PuristaLight">PuristaLight</option>
+                <option value="PuristaBold">PuristaBold</option>
+                <option value="EtelkaMonospacePro">EtelkaMonospacePro</option>
+                <option value="EtelkaMonospaceProBold">EtelkaMonospaceProBold</option>
+                <option value="EtelkaNarrowMediumPro">EtelkaNarrowMediumPro</option>
+                <option value="LucidaConsoleB">LucidaConsoleB</option>
+                <option value="TahomaB">TahomaB</option>
+                <option value="RobotoCondensed">RobotoCondensed</option>
+                <option value="RobotoCondensedBold">RobotoCondensedBold</option>
+                <option value="RobotoCondensedLight">RobotoCondensedLight</option>
+              </select>
+
+            <div class="row" style="margin-top:6px;">
+                <div>
+                  <label>Title Size: <span id="titleSizeVal">1.3</span></label>
+                  <input type="range" id="titleSize" min="0.5" max="4" step="0.1" value="1.3">
+                </div>
+                <div>
+                  <label>Sub Size: <span id="subtitleSizeVal">1.1</span></label>
+                  <input type="range" id="subtitleSize" min="0.5" max="4" step="0.1" value="1.1">
+                </div>
+              </div>
+
+              <label>Output Format</label>
+              <select id="outputFormat" onchange="updatePreviewStyle()">
+                <option value="subtitle">fn_createSubtitle</option>
+                <option value="sideTitle">fn_createSideTitle</option>
+              </select>
+
+              <div class="row-tight" style="margin-top:6px;">
+                <input type="checkbox" id="showArmaUI" checked onchange="toggleArmaUI()">
+                <label style="margin:0; cursor:pointer;" for="showArmaUI">Show Arma UI overlay</label>
+              </div>
+              <div class="row-tight" style="margin-top:4px;">
+                <input type="checkbox" id="stripPunctuation" onchange="updatePreviewText()">
+                <label style="margin:0; cursor:pointer;" for="stripPunctuation">Strip punctuation</label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── SUBTITLE & AUDIO ── -->
+        <div class="section">
+          <div class="section-title" onclick="toggleSection(this)">Subtitle &amp; Audio <span class="caret">▼</span></div>
+          <div class="section-body">
+            <label>Title Text</label>
+            <input type="text" id="previewTitle" value="Incoming Transmission" placeholder="Speaker / title...">
+            <label>Subtitle Text <span id="charCounter" style="float:right; font-size:0.85em; color:#888;">46 / 80</span></label>
+            <input type="text" id="previewSubtitle" maxlength="80"
+              placeholder="Subtitle text..." value="Enemy activity detected west of the village">
+            <div id="durationRow" style="display:none;">
+              <label>Duration (sec)</label>
+              <input type="number" id="previewDuration" value="5" min="0.5" step="0.5" style="width:80px;">
+            </div>
+            <div class="btn-group">
+              <button class="btn btn-accent" onclick="previewSingle()">&#9654; Preview</button>
+              <button class="btn" id="fadeToggleBtn" onclick="toggleFade()">Fade Out</button>
+              <button class="btn" onclick="quickCopySQF()">&#128203; Copy SQF</button>
+            </div>
+
+            <hr style="border:none; border-top:1px solid var(--panel-border); margin:10px 0;">
+
+            <label>Audio File</label>
+            <input type="file" id="audioFile" accept="audio/*" multiple style="font-size:11px; color:var(--text);">
+            <label>Sound Class Name <span style="font-size:10px;color:#666">(for playSound &amp; CfgSounds)</span></label>
+            <input type="text" id="soundClassName" placeholder="e.g. radio_transmission_01" style="font-size:12px;">
+            <div class="row" style="margin-top:4px;">
+              <div>
+                <label>Duration (sec)</label>
+                <input type="number" id="manualDuration" min="1" step="1" placeholder="auto">
+              </div>
+              <div>
+                <label>Detected</label>
+                <div id="detectedDuration" style="padding:5px 0; font-size:13px; color:var(--text);">—</div>
+              </div>
+            </div>
+
+            <label>Paste full transcript</label>
+            <textarea id="transcriptText" rows="3"
+              placeholder="Paste dialogue here. Auto-split will chunk it into timed subtitle entries..."></textarea>
+            <div class="row" style="margin-top:4px;">
+              <div>
+                <label>Max chars</label>
+                <input type="number" id="maxCharsPerEntry" value="70" min="20" max="200" style="width:65px;">
+              </div>
+              <div>
+                <label>Target c/s</label>
+                <input type="number" id="targetCPS" value="15" min="5" max="30" style="width:65px;">
+              </div>
+            </div>
+            <div class="btn-group">
+              <button class="btn btn-accent" onclick="autoSplitTranscript()">Auto-Split &amp; Pace</button>
+              <button class="btn" id="transcribeBtn" onclick="transcribeAudio()"
+                title="AI transcription of loaded audio (requires internet on first use)">&#127908; Transcribe</button>
+            </div>
+            <div id="transcribeStatus" style="font-size:10px; color:#666; margin-top:4px;"></div>
+            <div id="transcribeProgress" style="display:none; margin-top:4px;">
+              <div style="background:#333; border-radius:3px; height:5px; overflow:hidden;">
+                <div id="transcribeBar" style="background:var(--accent); height:100%; width:0%; transition:width 0.3s;">
+                </div>
+              </div>
+              <div id="transcribeProgressText" style="font-size:10px; color:#888; margin-top:2px;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── PROJECT ── -->
+        <div class="section">
+          <div class="section-title" onclick="toggleSection(this)">Project <span class="caret">▼</span></div>
+          <div class="section-body">
+            <div class="btn-group">
+              <button class="btn" onclick="saveProject()">&#128190; Save</button>
+              <button class="btn" onclick="loadProject()">&#128194; Load</button>
+              <button class="btn btn-danger" onclick="clearProject()">Clear All</button>
+            </div>
+            <div id="saveStatus" style="font-size:10px; color:#555; margin-top:4px;"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ───── MAIN ───── -->
+    <div class="main">
+
+      <!-- Preview -->
+      <div class="preview-container">
+        <div class="preview-frame" id="previewFrame">
+          <div class="preview-bg"></div>
+          <span class="preview-label">PREVIEW</span>
+
+          <!-- Arma UI overlays (ghostly reference) -->
+          <div class="arma-ui-overlay arma-hud-weapon">
+            <div class="wpn-name">MXC 6.5 mm</div>
+            <div class="wpn-ammo">30 &thinsp;|&thinsp;3</div>
+            <div class="wpn-detail">200 m &nbsp; White Smoke x1</div>
+          </div>
+          <div class="arma-ui-overlay arma-hud-squad-list">
+            <div class="sl-col">
+              <div class="sl-row"><span class="sl-dot">&bull;</span><span class="sl-name">LeX</span></div>
+              <div class="sl-row"><span class="sl-dot">&bull;</span><span class="sl-name">Harry Davis</span></div>
+              <div class="sl-row"><span class="sl-dot">&bull;</span><span class="sl-name">Jacob O'Brien</span></div>
+              <div class="sl-row"><span class="sl-dot">&bull;</span><span class="sl-name">Liam Dorgan</span></div>
+              <div class="sl-row"><span class="sl-dot">&bull;</span><span class="sl-name">Danny Hall</span></div>
+            </div>
+            <div class="sl-col">
+              <div class="sl-row"><span class="sl-dot">&bull;</span><span class="sl-name">Danny Johnson</span></div>
+              <div class="sl-row"><span class="sl-dot">&bull;</span><span class="sl-name">Noah Wilson</span></div>
+              <div class="sl-row"><span class="sl-dot">&bull;</span><span class="sl-name">Kyle Lee</span></div>
+              <div class="sl-row"><span class="sl-dot">&bull;</span><span class="sl-name">Ryan Nelson</span></div>
+              <div class="sl-row"><span class="sl-dot">&bull;</span><span class="sl-name">Lucas Green</span></div>
+            </div>
+          </div>
+          <div class="arma-ui-overlay arma-hud-compass">
+            <span class="comp-needle"></span>
+            <span class="comp-n">N</span>
+          </div>
+          <div class="arma-ui-overlay arma-hud-gps">
+            <div class="gps-label"><span>NAV</span><span>12.02</span></div>
+          </div>
+          <div class="arma-ui-overlay arma-hud-chat">
+            <div class="ch-side">[Side] HQ: All units report status</div>
+            <div class="ch-group">[Group] Alpha 2: Copy, moving to grid</div>
+            <div class="ch-global">[Global] Server: Safe start ending</div>
+          </div>
+          <div class="arma-ui-overlay arma-hud-squad-bar">
+            <div class="sb-slot">
+              <div class="sb-num">1</div>
+              <div class="sb-icon">&#9679;</div>
+              <div class="sb-name">LeX</div>
+            </div>
+            <div class="sb-slot">
+              <div class="sb-num">2</div>
+              <div class="sb-icon">&#9679;</div>
+              <div class="sb-name">Davis</div>
+            </div>
+            <div class="sb-slot">
+              <div class="sb-num">3</div>
+              <div class="sb-icon">&#9679;</div>
+              <div class="sb-name">O'Brien</div>
+            </div>
+            <div class="sb-slot">
+              <div class="sb-num">4</div>
+              <div class="sb-icon">&#9679;</div>
+              <div class="sb-name">Dorgan</div>
+            </div>
+            <div class="sb-slot">
+              <div class="sb-num">5</div>
+              <div class="sb-icon">&#9679;</div>
+              <div class="sb-name">Hall</div>
+            </div>
+          </div>
+
+          <!-- Subtitle (draggable + resizable) -->
+          <div class="subtitle-display" id="subtitleDisplay" style="left:10%; bottom:18%;">
+            <div class="resize-handle rh-tl" data-corner="tl"></div>
+            <div class="resize-handle rh-tr" data-corner="tr"></div>
+            <div class="resize-handle rh-bl" data-corner="bl"></div>
+            <div class="resize-handle rh-br" data-corner="br"></div>
+            <div class="subtitle-title" id="subTitleEl">Incoming Transmission</div>
+            <div class="subtitle-text" id="subTextEl">Enemy activity detected west of the village</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Audio Bar -->
+      <div class="audio-bar" id="audioBar" style="display:none;">
+        <button class="btn btn-small btn-accent" id="playAllBtn" onclick="playTimeline()">&#9654; Play All</button>
+        <button class="btn btn-small" id="stopBtn" onclick="stopTimeline()">&#9632; Stop</button>
+        <audio id="audioPlayer" controls></audio>
+        <span class="time-display" id="timeDisplay">0:00 / 0:00</span>
+      </div>
+
+      <!-- Tabs: Timeline / Code -->
+      <div style="flex:0 0 auto;">
+        <div class="tab-bar">
+          <button class="tab-btn active" onclick="switchTab('timeline')">Timeline</button>
+          <button class="tab-btn" onclick="switchTab('code')">Generated SQF</button>
+          <button class="tab-btn" onclick="switchTab('cfgsounds')">CfgSounds</button>
+          <button class="tab-btn" onclick="switchTab('history')">History</button>
+        </div>
+
+        <!-- Timeline Panel -->
+        <div class="tab-panel active" id="tab-timeline">
+          <div class="timeline-container" id="timelineContainer">
+            <div class="timeline-header">
+              <span>#</span>
+              <span>Start</span>
+              <span>Dur</span>
+              <span>Title</span>
+              <span>Subtitle</span>
+              <span>Speed</span>
+              <span></span>
+            </div>
+            <div id="timelineEntries"></div>
+          </div>
+          <div class="btn-group" style="margin-top:6px;">
+            <button class="btn btn-accent" onclick="addTimelineEntry()">+ Add Entry</button>
+            <button class="btn" onclick="generateSQF()">Generate SQF</button>
+            <button class="btn" onclick="generateSQF(); copyCode();">&#128203; Copy SQF</button>
+          </div>
+        </div>
+
+        <!-- Code Panel -->
+        <div class="tab-panel" id="tab-code">
+          <div class="row" style="margin-bottom:6px; gap:12px; align-items:center;">
+            <div style="flex:0 0 auto;">
+              <label style="margin:0; font-size:11px;">SQF Mode</label>
+            </div>
+            <select id="sqfMode" style="width:auto; font-size:11px; padding:3px 6px;" onchange="generateSQF()">
+              <option value="function">Function Call (remoteExec)</option>
+              <option value="inline">Inline Spawn (cutText)</option>
+            </select>
+            <div class="row-tight" style="flex:0 0 auto;">
+              <input type="checkbox" id="includePlaySound" onchange="generateSQF()">
+              <label style="margin:0; font-size:11px; cursor:pointer;" for="includePlaySound">Include playSound</label>
+            </div>
+          </div>
+          <div class="code-output visible" id="codeOutput">// Click "Generate SQF" to create code from your timeline
+            entries.</div>
+          <div class="btn-group" style="margin-top:6px;">
+            <button class="btn btn-accent" onclick="copyCode()">&#128203; Copy to Clipboard</button>
+            <button class="btn" onclick="generateSQF()">&#8635; Regenerate</button>
+          </div>
+        </div>
+
+        <!-- CfgSounds Panel -->
+        <div class="tab-panel" id="tab-cfgsounds">
+          <div class="code-output visible" id="cfgSoundsOutput">// Add a sound class name and audio file to generate CfgSounds config.</div>
+          <div class="btn-group" style="margin-top:6px;">
+            <button class="btn btn-accent" onclick="copyCfgSounds()">&#128203; Copy to Clipboard</button>
+            <button class="btn" onclick="generateCfgSounds()">&#8635; Generate</button>
+          </div>
+        </div>
+
+        <!-- History Panel -->
+        <div class="tab-panel" id="tab-history">
+          <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <span style="font-size:13px; font-weight:600;">Generation History</span>
+            <button class="btn" style="color:var(--danger); font-size:11px; padding:3px 8px;" onclick="clearHistory()">Clear All</button>
+          </div>
+          <div id="historyEmpty">No history yet. Generate SQF, quick-copy, or transcribe audio to save entries.</div>
+          <div id="historyList"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ═══════════════════════════════════════════════════════
+    //  ARMA FONT MAP & PRESETS
+    // ═══════════════════════════════════════════════════════
+    const ARMA_FONT_MAP = {
+      'PuristaSemibold': "'Segoe UI Semibold', 'Segoe UI', Rajdhani, sans-serif",
+      'PuristaMedium': "'Segoe UI', Rajdhani, sans-serif",
+      'PuristaLight': "'Segoe UI Light', 'Segoe UI', Rajdhani, sans-serif",
+      'PuristaBold': "'Segoe UI Bold', 'Segoe UI', Rajdhani, sans-serif",
+      'EtelkaMonospacePro': "'Consolas', 'Cascadia Mono', monospace",
+      'EtelkaMonospaceProBold': "'Consolas', 'Cascadia Mono', monospace",
+      'EtelkaNarrowMediumPro': "'Segoe UI', 'Arial Narrow', sans-serif",
+      'LucidaConsoleB': "'Lucida Console', 'Consolas', monospace",
+      'TahomaB': "Tahoma, 'Segoe UI', sans-serif",
+      'RobotoCondensed': "'Roboto Condensed', 'Segoe UI', sans-serif",
+      'RobotoCondensedBold': "'Roboto Condensed', 'Segoe UI', sans-serif",
+      'RobotoCondensedLight': "'Roboto Condensed', 'Segoe UI', sans-serif",
+    };
+
+    const STYLE_PRESETS = {
+      // Arma 3 side colors (stacked: title above subtitle)
+      blufor: { titleColor: '#3399FF', subtitleColor: '#FFFFFF', titleSize: 1.3, subSize: 1.1, font: 'PuristaSemibold', cssClass: '', layout: 'stacked' },
+      opfor: { titleColor: '#FF4040', subtitleColor: '#FFFFFF', titleSize: 1.3, subSize: 1.1, font: 'PuristaSemibold', cssClass: '', layout: 'stacked' },
+      indfor: { titleColor: '#3DCC3D', subtitleColor: '#FFFFFF', titleSize: 1.3, subSize: 1.1, font: 'PuristaSemibold', cssClass: '', layout: 'stacked' },
+      civilian: { titleColor: '#CC44CC', subtitleColor: '#FFFFFF', titleSize: 1.3, subSize: 1.1, font: 'PuristaSemibold', cssClass: '', layout: 'stacked' },
+      unknown: { titleColor: '#CCAA00', subtitleColor: '#FFFFFF', titleSize: 1.3, subSize: 1.1, font: 'PuristaSemibold', cssClass: '', layout: 'stacked' },
+      // Game styles (inline: "Speaker: text" on same line)
+      'cod-ally': { titleColor: '#aecbac', subtitleColor: '#FFFFFF', titleSize: 1.1, subSize: 1.1, font: 'PuristaBold', cssClass: 'preset-cod-ally', layout: 'inline' },
+      'cod-enemy': { titleColor: '#c33d43', subtitleColor: '#FFFFFF', titleSize: 1.1, subSize: 1.1, font: 'PuristaBold', cssClass: 'preset-cod-enemy', layout: 'inline' },
+      'wingman-ally': { titleColor: '#66CCFF', subtitleColor: '#FFFFFF', titleSize: 1.4, subSize: 1.3, font: 'PuristaSemibold', cssClass: 'preset-wingman', layout: 'stacked' },
+      'wingman-enemy': { titleColor: '#FF6666', subtitleColor: '#FFFFFF', titleSize: 1.4, subSize: 1.3, font: 'PuristaSemibold', cssClass: 'preset-wingman', layout: 'stacked' },
+      halo: { titleColor: '#E8D44D', subtitleColor: '#D0D0D0', titleSize: 1.1, subSize: 1.1, font: 'RobotoCondensed', cssClass: 'preset-halo', layout: 'inline', titleTransform: 'uppercase' },
+      'halo-ai': { titleColor: '#ADD8E6', subtitleColor: '#ADD8E6', titleSize: 1.0, subSize: 1.0, font: 'RobotoCondensedLight', cssClass: 'preset-halo-ai', layout: 'inline' },
+      'halo-covenant': { titleColor: '#7B68EE', subtitleColor: '#ADD8E6', titleSize: 1.1, subSize: 1.1, font: 'RobotoCondensedBold', cssClass: 'preset-halo-covenant', layout: 'inline' },
+    };
+
+    const POSITION_PRESETS = {
+      'center-bottom': { left: '10%', top: 'auto', bottom: '18%', right: 'auto' },
+      'center-top': { left: '10%', top: '8%', bottom: 'auto', right: 'auto' },
+      'left-bottom': { left: '3%', top: 'auto', bottom: '18%', right: 'auto' },
+      'right-center': { left: 'auto', top: 'auto', bottom: '35%', right: '3%' },
+    };
+
+    // ═══════════════════════════════════════════════════════
+    //  STATE
+    // ═══════════════════════════════════════════════════════
+    let timeline = [];
+    let playbackTimer = null;
+    let audioElement = document.getElementById('audioPlayer');
+    let isPlaying = false;
+    let currentActiveIdx = -1;
+    let currentDisplayedTitle = '';
+    let currentPresetClass = '';
+    let fadeEnabled = false;
+
+    const $ = id => document.getElementById(id);
+
+    function toggleFade() {
+      fadeEnabled = !fadeEnabled;
+      const btn = $('fadeToggleBtn');
+      btn.classList.toggle('btn-accent', fadeEnabled);
+      $('durationRow').style.display = fadeEnabled ? '' : 'none';
+
+      // If just enabled and subtitle is currently showing, fade it out
+      if (fadeEnabled && $('subtitleDisplay').classList.contains('visible')) {
+        const dur = parseFloat($('previewDuration').value) || 5;
+        setTimeout(() => { previewFadeOut(); }, dur * 1000);
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  COLLAPSIBLE SECTIONS
+    // ═══════════════════════════════════════════════════════
+    function toggleSection(titleEl) {
+      const body = titleEl.nextElementSibling;
+      const caret = titleEl.querySelector('.caret');
+      body.classList.toggle('collapsed');
+      caret.classList.toggle('collapsed');
+    }
+
+    function toggleAdvanced(el) {
+      const body = el.nextElementSibling;
+      const arrow = el.querySelector('.adv-arrow');
+      body.classList.toggle('open');
+      arrow.classList.toggle('open');
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  PRESETS
+    // ═══════════════════════════════════════════════════════
+    function applyPreset() {
+      const key = $('stylePreset').value;
+      const display = $('subtitleDisplay');
+
+      // Explicitly choosing a preset clears the old CSS class
+      if (currentPresetClass) {
+        display.classList.remove(currentPresetClass);
+        currentPresetClass = '';
+      }
+
+      if (key === 'custom') return;
+      const p = STYLE_PRESETS[key];
+      if (!p) return;
+
+      $('titleColor').value = p.titleColor;
+      $('titleColorHex').value = p.titleColor;
+      $('subtitleColor').value = p.subtitleColor;
+      $('subtitleColorHex').value = p.subtitleColor;
+      $('titleSize').value = p.titleSize;
+      $('titleSizeVal').textContent = p.titleSize;
+      $('subtitleSize').value = p.subSize;
+      $('subtitleSizeVal').textContent = p.subSize;
+      $('fontSelect').value = p.font;
+
+      // Auto-set position for game style presets
+      if (key === 'wingman-ally' || key === 'wingman-enemy') {
+        $('positionPreset').value = 'center-top';
+        applyPositionPreset();
+      } else if (key === 'cod-ally' || key === 'cod-enemy' || key === 'halo' || key === 'halo-covenant' || key === 'halo-ai') {
+        $('positionPreset').value = 'center-bottom';
+        applyPositionPreset();
+      }
+
+      updatePreviewStyle();
+    }
+
+    function detectPreset() {
+      const tc = $('titleColor').value.toUpperCase();
+      const sc = $('subtitleColor').value.toUpperCase();
+      const ts = parseFloat($('titleSize').value);
+      const ss = parseFloat($('subtitleSize').value);
+      const f = $('fontSelect').value;
+
+      for (const [key, p] of Object.entries(STYLE_PRESETS)) {
+        if (p.titleColor.toUpperCase() === tc && p.subtitleColor.toUpperCase() === sc &&
+          p.titleSize === ts && p.subSize === ss && p.font === f) {
+          return key;
+        }
+      }
+      return 'custom';
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  CUSTOM PRESETS (localStorage)
+    // ═══════════════════════════════════════════════════════
+    function getCustomPresets() {
+      try {
+        return JSON.parse(localStorage.getItem('arma3_custom_presets') || '{}');
+      } catch (e) { return {}; }
+    }
+
+    function saveCustomPresets(presets) {
+      localStorage.setItem('arma3_custom_presets', JSON.stringify(presets));
+    }
+
+    function saveCustomPreset() {
+      const name = prompt('Preset name:');
+      if (!name || !name.trim()) return;
+      const key = 'user-' + name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+      const preset = {
+        name: name.trim(),
+        titleColor: $('titleColor').value,
+        subtitleColor: $('subtitleColor').value,
+        titleSize: parseFloat($('titleSize').value),
+        subSize: parseFloat($('subtitleSize').value),
+        font: $('fontSelect').value,
+        cssClass: ''
+      };
+
+      const presets = getCustomPresets();
+      presets[key] = preset;
+      saveCustomPresets(presets);
+      STYLE_PRESETS[key] = preset;
+      rebuildCustomPresetsUI();
+      $('stylePreset').value = key;
+      toast('Preset "' + name.trim() + '" saved');
+    }
+
+    function deleteCustomPreset() {
+      const key = $('stylePreset').value;
+      if (!key.startsWith('user-')) {
+        toast('Can only delete custom presets');
+        return;
+      }
+      const presets = getCustomPresets();
+      const name = presets[key] ? presets[key].name : key;
+      if (!confirm('Delete preset "' + name + '"?')) return;
+      delete presets[key];
+      delete STYLE_PRESETS[key];
+      saveCustomPresets(presets);
+      rebuildCustomPresetsUI();
+      $('stylePreset').value = 'blufor';
+      applyPreset();
+      toast('Preset deleted');
+    }
+
+    function rebuildCustomPresetsUI() {
+      const group = $('customPresetsGroup');
+      group.innerHTML = '';
+      const presets = getCustomPresets();
+      for (const [key, p] of Object.entries(presets)) {
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = p.name;
+        group.appendChild(opt);
+      }
+    }
+
+    function loadCustomPresetsIntoState() {
+      const presets = getCustomPresets();
+      for (const [key, p] of Object.entries(presets)) {
+        STYLE_PRESETS[key] = p;
+      }
+      rebuildCustomPresetsUI();
+    }
+
+    function applyPositionPreset() {
+      const key = $('positionPreset').value;
+      if (key === 'custom') return;
+      const p = POSITION_PRESETS[key];
+      if (!p) return;
+
+      const el = $('subtitleDisplay');
+      el.style.left = p.left;
+      el.style.top = p.top;
+      el.style.bottom = p.bottom;
+      el.style.right = p.right;
+      el.style.transform = '';
+    }
+
+    // Get subtitle position as normalized 0-1 fractions of the preview frame
+    // Returns { x, y, w } for safezone-based SQF positioning
+    function getSubtitlePosition() {
+      const sub = $('subtitleDisplay');
+      const frame = $('previewFrame');
+      const fRect = frame.getBoundingClientRect();
+      const sRect = sub.getBoundingClientRect();
+
+      return {
+        x: round2(Math.max(0, (sRect.left - fRect.left) / fRect.width)),
+        y: round2(Math.max(0, (sRect.top - fRect.top) / fRect.height)),
+        w: round2(sRect.width / fRect.width)
+      };
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  ARMA UI OVERLAY
+    // ═══════════════════════════════════════════════════════
+    function toggleArmaUI() {
+      const show = $('showArmaUI').checked;
+      document.querySelectorAll('.arma-ui-overlay').forEach(el => el.classList.toggle('hidden', !show));
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  TEXT PROCESSING (punctuation stripping)
+    // ═══════════════════════════════════════════════════════
+    function processText(text) {
+      if ($('stripPunctuation').checked) {
+        return text.replace(/[.,!?;:()\[\]{}\-\u2014\u2013\u2026]/g, '');
+      }
+      return text;
+    }
+
+    // Sync color pickers ↔ hex inputs
+    function syncColors() {
+      $('titleColor').addEventListener('input', e => {
+        $('titleColorHex').value = e.target.value;
+        updatePreviewStyle();
+      });
+      $('titleColorHex').addEventListener('input', e => {
+        if (/^#[0-9a-f]{6}$/i.test(e.target.value)) {
+          $('titleColor').value = e.target.value;
+          updatePreviewStyle();
+        }
+      });
+      $('subtitleColor').addEventListener('input', e => {
+        $('subtitleColorHex').value = e.target.value;
+        updatePreviewStyle();
+      });
+      $('subtitleColorHex').addEventListener('input', e => {
+        if (/^#[0-9a-f]{6}$/i.test(e.target.value)) {
+          $('subtitleColor').value = e.target.value;
+          updatePreviewStyle();
+        }
+      });
+    }
+
+    // Live-update preview text & style
+    function setupLivePreview() {
+      $('previewTitle').addEventListener('input', updatePreviewText);
+      $('previewSubtitle').addEventListener('input', () => { updatePreviewText(); updateCharCounter(); });
+      $('titleSize').addEventListener('input', e => {
+        $('titleSizeVal').textContent = e.target.value;
+        updatePreviewStyle();
+      });
+      $('subtitleSize').addEventListener('input', e => {
+        $('subtitleSizeVal').textContent = e.target.value;
+        updatePreviewStyle();
+      });
+      $('fontSelect').addEventListener('change', updatePreviewStyle);
+    }
+
+    function updatePreviewText() {
+      $('subTitleEl').textContent = processText($('previewTitle').value || '');
+      $('subTextEl').textContent = processText($('previewSubtitle').value || '');
+    }
+
+    const SUBTITLE_MAX_LENGTH = 80;
+
+    function updateCharCounter() {
+      const len = $('previewSubtitle').value.length;
+      const counter = $('charCounter');
+      counter.textContent = len + ' / ' + SUBTITLE_MAX_LENGTH;
+      counter.style.color = len >= SUBTITLE_MAX_LENGTH ? '#ff4444' : len >= 60 ? '#ffaa00' : '#888';
+    }
+
+    function updatePreviewStyle() {
+      const titleEl = $('subTitleEl');
+      const textEl = $('subTextEl');
+      const display = $('subtitleDisplay');
+
+      titleEl.style.color = $('titleColor').value;
+      titleEl.style.fontSize = $('titleSize').value + 'em';
+      textEl.style.color = $('subtitleColor').value;
+      textEl.style.fontSize = $('subtitleSize').value + 'em';
+
+      // Apply web-approximated font
+      const font = $('fontSelect').value;
+      const webFont = ARMA_FONT_MAP[font] || "'Segoe UI', sans-serif";
+      titleEl.style.fontFamily = webFont;
+      textEl.style.fontFamily = webFont;
+
+      const isBold = /Bold/i.test(font);
+      const isLight = /Light/i.test(font);
+      titleEl.style.fontWeight = isBold ? '700' : isLight ? '300' : '600';
+      textEl.style.fontWeight = isBold ? '700' : isLight ? '300' : '600';
+
+      const isSide = $('outputFormat').value === 'sideTitle';
+      display.classList.toggle('side-title', isSide);
+
+      // Apply preset CSS class
+      const presetKey = $('stylePreset').value;
+      const newClass = STYLE_PRESETS[presetKey]?.cssClass || '';
+      if (newClass) {
+        // Explicitly selected preset — apply its class
+        if (currentPresetClass && currentPresetClass !== newClass) display.classList.remove(currentPresetClass);
+        display.classList.add(newClass);
+        currentPresetClass = newClass;
+      }
+      // Don't remove preset CSS when auto-detected as 'custom' (size/color tweak)
+
+      // Auto-detect preset
+      $('stylePreset').value = detectPreset();
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  SINGLE PREVIEW with fade
+    // ═══════════════════════════════════════════════════════
+
+    function previewSingle() {
+      const display = $('subtitleDisplay');
+      const dur = parseFloat($('previewDuration').value) || 5;
+      const fade = fadeEnabled;
+
+      updatePreviewText();
+      updatePreviewStyle();
+
+      // Reset
+      display.classList.remove('visible', 'fade-in', 'fade-out');
+      void display.offsetWidth; // force reflow
+
+      if (fade) {
+        // Fade in
+        display.classList.add('fade-in');
+        display.addEventListener('animationend', function onIn() {
+          display.removeEventListener('animationend', onIn);
+          display.classList.remove('fade-in');
+          display.classList.add('visible');
+
+          // Hold, then fade out
+          setTimeout(() => {
+            previewFadeOut();
+          }, dur * 1000);
+        });
+      } else {
+        // Instant show, stay visible
+        display.classList.add('visible');
+      }
+    }
+
+    function previewFadeOut() {
+      const display = $('subtitleDisplay');
+      const fade = fadeEnabled;
+      display.classList.remove('visible', 'fade-in');
+      if (fade) {
+        display.classList.add('fade-out');
+        display.addEventListener('animationend', function onOut() {
+          display.removeEventListener('animationend', onOut);
+          display.classList.remove('fade-out');
+        });
+      } else {
+        display.classList.remove('fade-out');
+      }
+    }
+
+    // Quick Copy from sidebar
+    function quickCopySQF() {
+      const title = $('previewTitle').value || 'Title';
+      const subtitle = $('previewSubtitle').value || 'Subtitle';
+      const dur = parseFloat($('previewDuration').value) || 5;
+      const sqfMode = $('sqfMode').value;
+      const pos = getSubtitlePosition();
+      const code = formatSubtitleCall(title, subtitle, dur,
+        $('titleColor').value, $('subtitleColor').value,
+        parseFloat($('titleSize').value), parseFloat($('subtitleSize').value),
+        $('fontSelect').value, true, sqfMode, pos, getActiveLayout(), getActiveTitleTransform());
+      navigator.clipboard.writeText(code)
+        .then(() => {
+          const _ql = 'Quick: ' + (title || 'Untitled') + ' [' + ($('stylePreset').value || 'custom') + ']';
+          saveHistoryEntry(_ql);
+          renderHistory();
+          toast('SQF copied');
+        })
+        .catch(() => toast('Copy failed'));
+    }
+
+    // Show a subtitle in the preview area (used by timeline playback)
+    function showSubtitle(title, subtitle, titleColor, subtitleColor, titleSize, subSize, format) {
+      const display = $('subtitleDisplay');
+      const titleEl = $('subTitleEl');
+      const textEl = $('subTextEl');
+
+      titleEl.style.color = titleColor || '#3399FF';
+      titleEl.style.fontSize = (titleSize || 1.3) + 'em';
+      textEl.style.color = subtitleColor || '#FFFFFF';
+      textEl.style.fontSize = (subSize || 1.1) + 'em';
+
+      const font = $('fontSelect').value;
+      const webFont = ARMA_FONT_MAP[font] || "'Segoe UI', sans-serif";
+      titleEl.style.fontFamily = webFont;
+      textEl.style.fontFamily = webFont;
+
+      const isSide = format === 'sideTitle';
+      display.classList.toggle('side-title', isSide);
+
+      const sameSpeaker = (title === currentDisplayedTitle) && display.classList.contains('visible');
+
+      if (sameSpeaker) {
+        textEl.textContent = processText(subtitle);
+        textEl.classList.remove('text-swap');
+        void textEl.offsetWidth;
+        textEl.classList.add('text-swap');
+      } else {
+        titleEl.textContent = processText(title);
+        textEl.textContent = processText(subtitle);
+        textEl.classList.remove('text-swap');
+
+        display.classList.remove('visible', 'fade-in', 'fade-out');
+        void display.offsetWidth;
+        if (fadeEnabled) {
+          display.classList.add('fade-in');
+          display.addEventListener('animationend', function onIn() {
+            display.removeEventListener('animationend', onIn);
+            display.classList.remove('fade-in');
+            display.classList.add('visible');
+          });
+        } else {
+          display.classList.add('visible');
+        }
+      }
+
+      currentDisplayedTitle = title;
+    }
+
+    function hideSubtitle() {
+      currentDisplayedTitle = '';
+      previewFadeOut();
+    }
+
+    // Draggable + Resizable subtitle positioning
+    (function () {
+      const sub = document.getElementById('subtitleDisplay');
+      const frame = document.getElementById('previewFrame');
+      let dragging = false, resizing = false, offX = 0, offY = 0;
+      let startMouseX = 0, startTitleSize = 0, startSubSize = 0;
+
+      // Click to select / deselect
+      sub.addEventListener('mousedown', function (e) {
+        // Check if resize handle
+        if (e.target.classList.contains('resize-handle')) {
+          resizing = true;
+          startMouseX = e.clientX;
+          startTitleSize = parseFloat($('titleSize').value);
+          startSubSize = parseFloat($('subtitleSize').value);
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        dragging = true;
+        sub.classList.add('dragging');
+        sub.classList.add('selected');
+        const rect = sub.getBoundingClientRect();
+        offX = e.clientX - rect.left;
+        offY = e.clientY - rect.top;
+        e.preventDefault();
+      });
+
+      // Click outside to deselect
+      frame.addEventListener('mousedown', function (e) {
+        if (!sub.contains(e.target)) {
+          sub.classList.remove('selected');
+        }
+      });
+
+      document.addEventListener('mousemove', function (e) {
+        if (resizing) {
+          const dx = e.clientX - startMouseX;
+          const scale = dx / 100; // 100px drag = 1em change
+          const newTitle = Math.max(0.5, Math.min(4, parseFloat((startTitleSize + scale).toFixed(1))));
+          const newSub = Math.max(0.5, Math.min(4, parseFloat((startSubSize + scale).toFixed(1))));
+          $('titleSize').value = newTitle;
+          $('titleSizeVal').textContent = newTitle;
+          $('subtitleSize').value = newSub;
+          $('subtitleSizeVal').textContent = newSub;
+          updatePreviewStyle();
+          return;
+        }
+        if (!dragging) return;
+        const fr = frame.getBoundingClientRect();
+        let x = e.clientX - fr.left - offX;
+        let y = e.clientY - fr.top - offY;
+        x = Math.max(0, Math.min(x, fr.width - sub.offsetWidth));
+        y = Math.max(0, Math.min(y, fr.height - sub.offsetHeight));
+        sub.style.left = (x / fr.width * 100) + '%';
+        sub.style.top = (y / fr.height * 100) + '%';
+        sub.style.bottom = 'auto';
+        sub.style.right = 'auto';
+        $('positionPreset').value = 'custom';
+      });
+
+      document.addEventListener('mouseup', function () {
+        if (resizing) {
+          resizing = false;
+          return;
+        }
+        dragging = false;
+        sub.classList.remove('dragging');
+      });
+    })();
+
+    // ═══════════════════════════════════════════════════════
+    //  AUDIO
+    // ═══════════════════════════════════════════════════════
+
+    $('audioFile').addEventListener('change', function (e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const url = URL.createObjectURL(file);
+      audioElement.src = url;
+      $('audioBar').style.display = 'flex';
+
+      // Auto-generate sound class name from filename
+      const baseName = file.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_]/g, '_');
+      $('soundClassName').value = baseName;
+      $('includePlaySound').checked = true;
+      generateCfgSounds();
+
+      audioElement.addEventListener('loadedmetadata', function onMeta() {
+        audioElement.removeEventListener('loadedmetadata', onMeta);
+        const dur = Math.round(audioElement.duration);
+        $('detectedDuration').textContent = dur + 's';
+        $('manualDuration').value = dur;
+      });
+    });
+
+    audioElement.addEventListener('timeupdate', () => {
+      const cur = audioElement.currentTime;
+      const dur = audioElement.duration || 0;
+      $('timeDisplay').textContent = formatTime(cur) + ' / ' + formatTime(dur);
+
+      if (isPlaying) {
+        highlightActiveEntry(cur);
+      }
+    });
+
+    function formatTime(s) {
+      const m = Math.floor(s / 60);
+      const sec = Math.floor(s % 60);
+      return m + ':' + (sec < 10 ? '0' : '') + sec;
+    }
+
+    function getAudioDuration() {
+      const manual = parseFloat($('manualDuration').value);
+      if (manual > 0) return manual;
+      if (audioElement.duration && isFinite(audioElement.duration)) return audioElement.duration;
+      return 0;
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  TIMELINE
+    // ═══════════════════════════════════════════════════════
+
+    function addTimelineEntry(data) {
+      const entry = {
+        id: Date.now() + Math.random(),
+        start: 0,
+        duration: 5,
+        title: $('previewTitle').value || 'Title',
+        subtitle: '',
+        ...data
+      };
+      timeline.push(entry);
+      renderTimeline();
+    }
+
+    function removeTimelineEntry(id) {
+      timeline = timeline.filter(e => e.id !== id);
+      renderTimeline();
+    }
+
+    function renderTimeline() {
+      const container = $('timelineEntries');
+      container.innerHTML = '';
+
+      timeline.forEach((entry, idx) => {
+        const div = document.createElement('div');
+        div.className = 'timeline-entry';
+        div.dataset.id = entry.id;
+
+        // Reading speed calc
+        const cps = entry.duration > 0 ? entry.subtitle.length / entry.duration : 0;
+        let speedClass = 'speed-ok';
+        let speedLabel = cps.toFixed(1) + ' c/s';
+        if (cps > 25) { speedClass = 'speed-danger'; speedLabel += ' !!'; }
+        else if (cps > 18) { speedClass = 'speed-warn'; speedLabel += ' !'; }
+
+        // Length warning
+        const lenWarn = entry.subtitle.length >= SUBTITLE_MAX_LENGTH
+          ? '<div class="length-warn">' + entry.subtitle.length + ' / ' + SUBTITLE_MAX_LENGTH + ' chars (max)</div>'
+          : '';
+
+        div.innerHTML =
+          '<span class="entry-num">' + (idx + 1) + '</span>' +
+          '<input type="number" class="entry-start" value="' + entry.start + '" min="0" step="0.5" title="Start time (sec)">' +
+          '<input type="number" class="entry-dur" value="' + entry.duration + '" min="0.5" step="0.5" title="Duration (sec)">' +
+          '<input type="text" class="entry-title" value="' + escapeAttr(entry.title) + '" placeholder="Title">' +
+          '<input type="text" class="entry-subtitle" value="' + escapeAttr(entry.subtitle) + '" placeholder="Subtitle text" maxlength="' + SUBTITLE_MAX_LENGTH + '">' +
+          '<span class="speed-indicator ' + speedClass + '">' + speedLabel + lenWarn + '</span>' +
+          '<button class="remove-btn" title="Remove">&times;</button>';
+
+        // Event listeners
+        div.querySelector('.entry-start').addEventListener('change', e => { entry.start = parseFloat(e.target.value) || 0; renderTimeline(); });
+        div.querySelector('.entry-dur').addEventListener('change', e => { entry.duration = parseFloat(e.target.value) || 1; renderTimeline(); });
+        div.querySelector('.entry-title').addEventListener('change', e => { entry.title = e.target.value; renderTimeline(); });
+        div.querySelector('.entry-subtitle').addEventListener('change', e => { entry.subtitle = e.target.value; renderTimeline(); });
+        div.querySelector('.remove-btn').addEventListener('click', () => removeTimelineEntry(entry.id));
+
+        container.appendChild(div);
+      });
+    }
+
+    function escapeAttr(s) {
+      return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function highlightActiveEntry(currentTime) {
+      let activeIdx = -1;
+
+      timeline.forEach((entry, idx) => {
+        if (currentTime >= entry.start && currentTime < entry.start + entry.duration) {
+          activeIdx = idx;
+        }
+      });
+
+      // Only update display when the active entry actually changes
+      if (activeIdx === currentActiveIdx) return;
+      currentActiveIdx = activeIdx;
+
+      const entries = document.querySelectorAll('.timeline-entry');
+      entries.forEach((el, idx) => {
+        el.classList.toggle('active', idx === activeIdx);
+      });
+
+      if (activeIdx >= 0) {
+        const e = timeline[activeIdx];
+        showSubtitle(
+          e.title, e.subtitle,
+          $('titleColor').value, $('subtitleColor').value,
+          parseFloat($('titleSize').value), parseFloat($('subtitleSize').value),
+          $('outputFormat').value
+        );
+      } else {
+        hideSubtitle();
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  TIMELINE PLAYBACK
+    // ═══════════════════════════════════════════════════════
+
+    function playTimeline() {
+      if (timeline.length === 0) { toast('Add entries to the timeline first'); return; }
+
+      stopTimeline();
+      isPlaying = true;
+
+      // If audio is loaded, play it
+      if (audioElement.src && audioElement.readyState >= 1) {
+        audioElement.currentTime = 0;
+        audioElement.play();
+      } else {
+        // Simulate playback with a timer
+        let startTime = performance.now();
+        playbackTimer = setInterval(() => {
+          const elapsed = (performance.now() - startTime) / 1000;
+          highlightActiveEntry(elapsed);
+
+          // Stop after last entry ends
+          const maxEnd = Math.max(...timeline.map(e => e.start + e.duration));
+          if (elapsed > maxEnd + 1) {
+            stopTimeline();
+          }
+        }, 50);
+      }
+    }
+
+    function stopTimeline() {
+      isPlaying = false;
+      currentActiveIdx = -1;
+      currentDisplayedTitle = '';
+      if (playbackTimer) { clearInterval(playbackTimer); playbackTimer = null; }
+      if (audioElement.src) { audioElement.pause(); }
+      hideSubtitle();
+
+      document.querySelectorAll('.timeline-entry').forEach(el => el.classList.remove('active'));
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  AUTO-SPLIT TRANSCRIPT
+    // ═══════════════════════════════════════════════════════
+
+    function autoSplitTranscript() {
+      const text = $('transcriptText').value.trim();
+      if (!text) { toast('Paste a transcript first'); return; }
+
+      const title = $('previewTitle').value || 'Title';
+      const maxChars = parseInt($('maxCharsPerEntry').value) || 70;
+      const targetCPS = parseInt($('targetCPS').value) || 15;
+      const totalDuration = getAudioDuration();
+
+      // Split text into chunks respecting word boundaries
+      const chunks = splitTextIntoChunks(text, maxChars);
+
+      if (totalDuration > 0) {
+        // Calculate character-weighted timing
+        const totalChars = chunks.reduce((sum, c) => sum + c.length, 0);
+        let currentTime = 0;
+
+        timeline = chunks.map(chunk => {
+          const weight = chunk.length / totalChars;
+          const dur = Math.max(1, Math.round(totalDuration * weight * 10) / 10);
+          const entry = {
+            id: Date.now() + Math.random(),
+            start: Math.round(currentTime * 10) / 10,
+            duration: dur,
+            title: title,
+            subtitle: chunk
+          };
+          currentTime += dur;
+          return entry;
+        });
+
+        // Adjust last entry to fill remaining time
+        if (timeline.length > 0) {
+          const last = timeline[timeline.length - 1];
+          const remaining = totalDuration - last.start;
+          if (remaining > 0.5) last.duration = Math.round(remaining * 10) / 10;
+        }
+      } else {
+        // No audio duration — pace by target reading speed
+        let currentTime = 0;
+        timeline = chunks.map(chunk => {
+          const dur = Math.max(1.5, Math.round((chunk.length / targetCPS) * 10) / 10);
+          const entry = {
+            id: Date.now() + Math.random(),
+            start: Math.round(currentTime * 10) / 10,
+            duration: dur,
+            title: title,
+            subtitle: chunk
+          };
+          currentTime += dur;
+          return entry;
+        });
+      }
+
+      renderTimeline();
+      toast('Created ' + timeline.length + ' subtitle entries');
+    }
+
+    function splitTextIntoChunks(text, maxChars) {
+      // Normalize whitespace
+      text = text.replace(/\s+/g, ' ').trim();
+
+      // First split on sentence boundaries
+      const sentences = text.match(/[^.!?]+[.!?]+\s*|[^.!?]+$/g) || [text];
+      const chunks = [];
+
+      sentences.forEach(sentence => {
+        sentence = sentence.trim();
+        if (!sentence) return;
+
+        if (sentence.length <= maxChars) {
+          chunks.push(sentence);
+        } else {
+          // Split long sentences on commas, semicolons, or word boundaries
+          const words = sentence.split(' ');
+          let current = '';
+
+          words.forEach(word => {
+            const test = current ? current + ' ' + word : word;
+            if (test.length > maxChars && current) {
+              chunks.push(current.trim());
+              current = word;
+            } else {
+              current = test;
+            }
+          });
+
+          if (current.trim()) chunks.push(current.trim());
+        }
+      });
+
+      return chunks;
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  WHISPER TRANSCRIPTION (Transformers.js — direct audio file processing)
+    // ═══════════════════════════════════════════════════════
+
+    let whisperPipeline = null;
+    let isTranscribing = false;
+
+    function initTranscribeButton() {
+      // Whisper via Transformers.js works in all modern browsers
+      // No special API requirements — just needs the CDN to load the library + model
+    }
+
+    // Pure helper: compute timeline from transcript text without touching the DOM
+    function computeSplit(text, title, maxChars, targetCPS, totalDuration) {
+      const chunks = splitTextIntoChunks(text, maxChars);
+      if (chunks.length === 0) return [];
+      if (totalDuration > 0) {
+        const totalChars = chunks.reduce((sum, c) => sum + c.length, 0);
+        let currentTime = 0;
+        const tl = chunks.map(chunk => {
+          const weight = chunk.length / totalChars;
+          const dur = Math.max(1, Math.round(totalDuration * weight * 10) / 10);
+          const entry = {
+            id: Date.now() + Math.random(),
+            start: Math.round(currentTime * 10) / 10,
+            duration: dur,
+            title: title,
+            subtitle: chunk
+          };
+          currentTime += dur;
+          return entry;
+        });
+        if (tl.length > 0) {
+          const last = tl[tl.length - 1];
+          const remaining = totalDuration - last.start;
+          if (remaining > 0.5) last.duration = Math.round(remaining * 10) / 10;
+        }
+        return tl;
+      } else {
+        let currentTime = 0;
+        return chunks.map(chunk => {
+          const dur = Math.max(1.5, Math.round((chunk.length / targetCPS) * 10) / 10);
+          const entry = {
+            id: Date.now() + Math.random(),
+            start: Math.round(currentTime * 10) / 10,
+            duration: dur,
+            title: title,
+            subtitle: chunk
+          };
+          currentTime += dur;
+          return entry;
+        });
+      }
+    }
+
+    async function transcribeAudio() {
+      if (isTranscribing) { toast('Transcription already in progress'); return; }
+
+      const fileInput = $('audioFile');
+      if (!fileInput.files || !fileInput.files[0]) {
+        toast('Load an audio file first');
+        return;
+      }
+
+      const files = Array.from(fileInput.files);
+      const isBatch = files.length > 1;
+
+      const status = $('transcribeStatus');
+      const progress = $('transcribeProgress');
+      const bar = $('transcribeBar');
+      const progressText = $('transcribeProgressText');
+      const btn = $('transcribeBtn');
+
+      isTranscribing = true;
+      btn.disabled = true;
+      btn.style.opacity = '0.5';
+      progress.style.display = 'block';
+      bar.style.width = '0%';
+
+      try {
+        // Step 1: Load Transformers.js from CDN if not already loaded
+        if (!window.TransformersApi) {
+          status.textContent = 'Loading Whisper AI library (~2MB)...';
+          status.style.color = '#3399FF';
+          progressText.textContent = 'Downloading Transformers.js...';
+          bar.style.width = '5%';
+
+          await loadScript('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3');
+
+          if (!window.TransformersApi || !window.TransformersApi.pipeline) {
+            throw new Error('Failed to load Transformers.js library. An internet connection is required for transcription.');
+          }
+        }
+
+        const { pipeline, env } = window.TransformersApi;
+        env.allowLocalModels = false;
+
+        // Step 2: Load Whisper model (cached by browser after first download)
+        if (!whisperPipeline) {
+          status.textContent = 'Loading Whisper model (~75MB, cached after first use)...';
+          progressText.textContent = 'Downloading model files...';
+          bar.style.width = '10%';
+
+          whisperPipeline = await pipeline(
+            'automatic-speech-recognition',
+            'onnx-community/whisper-base',
+            {
+              dtype: 'q8',
+              device: 'wasm',
+              progress_callback: (p) => {
+                if (p.status === 'progress' && p.total) {
+                  const pct = Math.round((p.loaded / p.total) * 100);
+                  bar.style.width = (10 + pct * 0.5) + '%';
+                  progressText.textContent = 'Model: ' + pct + '% (' + formatBytes(p.loaded) + ' / ' + formatBytes(p.total) + ')';
+                } else if (p.status === 'done') {
+                  progressText.textContent = 'Model loaded.';
+                } else if (p.status === 'initiate') {
+                  progressText.textContent = 'Downloading ' + (p.file || 'model files') + '...';
+                }
+              }
+            }
+          );
+        }
+
+        // Capture shared settings once (style/preset/font etc.) for batch history entries
+        const baseSettings = isBatch ? captureSnapshot('', null) : null;
+        const maxChars = parseInt($('maxCharsPerEntry').value) || 70;
+        const targetCPS = parseInt($('targetCPS').value) || 15;
+        const title = $('previewTitle').value || 'Title';
+        let transcribedCount = 0;
+
+        // Step 3+: Process each file
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+
+          if (isBatch) {
+            status.textContent = 'Transcribing file ' + (i + 1) + ' of ' + files.length + ': ' + file.name;
+            status.style.color = '#3399FF';
+            progressText.textContent = 'Preparing audio...';
+            // Reserve first 60% for model load; last 35% split across files
+            bar.style.width = (60 + (i / files.length) * 35) + '%';
+          } else {
+            bar.style.width = '60%';
+            status.textContent = 'Decoding audio...';
+            progressText.textContent = 'Preparing audio for transcription...';
+          }
+
+          const arrayBuffer = await file.arrayBuffer();
+          const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+          const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+          const audioData = audioBuffer.getChannelData(0);
+          const audioDuration = audioBuffer.duration;
+          await audioCtx.close();
+
+          if (!isBatch) {
+            bar.style.width = '70%';
+            status.textContent = 'Transcribing... this may take a moment.';
+            progressText.textContent = 'Running Whisper AI on audio (' + Math.round(audioDuration) + 's)...';
+          }
+
+          const result = await whisperPipeline(audioData, {
+            chunk_length_s: 30,
+            stride_length_s: 5,
+            return_timestamps: false,
+            language: 'en',
+            task: 'transcribe'
+          });
+
+          const transcript = result.text.trim();
+
+          if (!transcript) {
+            if (isBatch) {
+              progressText.textContent = 'File ' + (i + 1) + ' of ' + files.length + ': No speech detected, skipping.';
+            } else {
+              status.textContent = 'No speech detected in the audio file.';
+              status.style.color = '#ffaa00';
+              progressText.textContent = '';
+              bar.style.width = '100%';
+            }
+            continue;
+          }
+
+          transcribedCount++;
+
+          // Compute timeline via pure helper
+          const computedTimeline = computeSplit(transcript, title, maxChars, targetCPS, audioDuration);
+          const baseName = file.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_]/g, '_');
+
+          // For the first (or only) file: update the live UI
+          if (!isBatch || i === 0) {
+            $('transcriptText').value = transcript;
+            $('soundClassName').value = baseName;
+            $('manualDuration').value = audioDuration.toFixed(1);
+            timeline = computedTimeline;
+            renderTimeline();
+            generateCfgSounds();
+            if (!isBatch) {
+              bar.style.width = '100%';
+              status.textContent = 'Transcription complete! Edit as needed, then click Auto-Split & Pace.';
+              status.style.color = '#44cc44';
+              progressText.textContent = 'Done \u2014 ' + transcript.length + ' characters transcribed.';
+            } else {
+              progressText.textContent = 'File 1 loaded. Processing remaining files...';
+            }
+          }
+
+          // Save to history for ALL files
+          const histEntry = Object.assign(
+            {},
+            isBatch ? baseSettings : captureSnapshot('', null),
+            {
+              timestamp: new Date().toISOString(),
+              label: (isBatch ? 'Batch: ' : 'Transcription: ') + file.name,
+              sourceFile: file.name,
+              transcriptText: transcript,
+              timeline: computedTimeline,
+              soundClassName: baseName,
+              manualDuration: audioDuration.toFixed(1)
+            }
+          );
+          const allEntries = loadHistoryEntries();
+          allEntries.unshift(histEntry);
+          while (allEntries.length > HISTORY_MAX) allEntries.pop();
+          localStorage.setItem(HISTORY_KEY, JSON.stringify(allEntries));
+        }
+
+        // Finalise
+        renderHistory();
+        if (isBatch) {
+          bar.style.width = '100%';
+          status.textContent = 'Batch complete: ' + transcribedCount + ' of ' + files.length + ' file' + (files.length > 1 ? 's' : '') + ' transcribed.';
+          status.style.color = '#44cc44';
+          progressText.textContent = 'Results saved to History tab — click any entry to restore.';
+          toast('Batch complete: ' + transcribedCount + ' files transcribed');
+        } else if (transcribedCount > 0) {
+          toast('Transcription complete');
+        }
+
+      } catch (err) {
+        console.error('Transcription error:', err);
+        status.textContent = 'Transcription failed: ' + err.message;
+        status.style.color = '#ff4444';
+        progressText.textContent = '';
+        bar.style.width = '0%';
+      } finally {
+        isTranscribing = false;
+        btn.disabled = false;
+        btn.style.opacity = '1';
+      }
+    }
+
+    function loadScript(src) {
+      return new Promise((resolve, reject) => {
+        if (window.TransformersApi) { resolve(); return; }
+        // Use dynamic import for ESM module
+        import(src).then(mod => {
+          window.TransformersApi = mod;
+          resolve();
+        }).catch(reject);
+      });
+    }
+
+    function formatBytes(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  SQF CODE GENERATION
+    // ═══════════════════════════════════════════════════════
+
+    function generateSQF() {
+      const format = $('outputFormat').value;
+      const output = $('codeOutput');
+      const tc = $('titleColor').value;
+      const sc = $('subtitleColor').value;
+      const ts = parseFloat($('titleSize').value);
+      const ss = parseFloat($('subtitleSize').value);
+      const font = $('fontSelect').value;
+      const strip = $('stripPunctuation').checked;
+      const sqfMode = $('sqfMode').value;
+      const soundClass = ($('soundClassName').value || '').trim();
+      const includeSound = soundClass.length > 0 && $('includePlaySound').checked;
+      const pos = getSubtitlePosition();
+
+      if (timeline.length === 0) {
+        const title = $('previewTitle').value || 'Title';
+        const subtitle = $('previewSubtitle').value || 'Subtitle';
+        const dur = parseFloat($('previewDuration').value) || 5;
+        let code = '';
+
+        if (includeSound && soundClass) {
+          code += '"' + escapeSQF(soundClass) + '" remoteExec ["playSound", 0];\n\n';
+        }
+
+        if (format === 'subtitle') {
+          code += formatSubtitleCall(strip ? processText(title) : title, strip ? processText(subtitle) : subtitle, dur, tc, sc, ts, ss, font, true, sqfMode, pos, getActiveLayout(), getActiveTitleTransform()) + '\n';
+        } else {
+          code += formatSideTitleCall(strip ? processText(title) : title, strip ? processText(subtitle) : subtitle, tc) + '\n';
+        }
+
+        output.textContent = code;
+      } else {
+        let code = '';
+
+        if (includeSound && soundClass) {
+          code += '"' + escapeSQF(soundClass) + '" remoteExec ["playSound", 0];\n\n';
+        }
+
+        const sorted = [...timeline].sort((a, b) => a.start - b.start);
+        let prevEnd = 0;
+        const hasPos = pos && (pos.x !== undefined);
+        const layout = getActiveLayout();
+        const titleTransform = getActiveTitleTransform();
+        const multiFmtStr = layout === 'inline'
+          ? "<t align='left' size='%1' color='%2' font='%3'>%4:  </t><t align='left' size='%5' color='%6' font='%3'>%7</t>"
+          : "<t align='center' size='%1' color='%2' font='%3'>%4</t><br/><t align='center' size='%5' color='%6' font='%3'>%7</t>";
+
+        if (format === 'subtitle' && sqfMode === 'inline') {
+          const isInlinePos = hasPos && layout === 'inline';
+          const speakerFmtStr = "<t align='right' size='%1' color='%2' font='%3'>%4:  </t>";
+          const subtitleOnlyFmtStr = "<t align='left' size='%1' color='%2' font='%3'>%4</t>";
+
+          code += '[] spawn {\n';
+
+          if (isInlinePos) {
+            // Inline positioned mode — two split controls for stable speaker
+            const splitRatio = 0.45;
+            const speakerW = round2(pos.w * splitRatio);
+            const subW = round2(pos.w * (1 - splitRatio));
+
+            code += '  private _speakerCtrl = uiNamespace getVariable ["SB_subtitleSpeakerCtrl", controlNull];\n';
+            code += '  if (isNull _speakerCtrl) then {\n';
+            code += '    _speakerCtrl = (findDisplay 46) ctrlCreate ["RscStructuredText", -1];\n';
+            code += '    uiNamespace setVariable ["SB_subtitleSpeakerCtrl", _speakerCtrl];\n';
+            code += '  };\n';
+            code += '  _speakerCtrl ctrlSetBackgroundColor [0, 0, 0, 0];\n';
+            code += '  _speakerCtrl ctrlSetPosition [\n';
+            code += '    safezoneX + ' + pos.x + ' * safezoneW,\n';
+            code += '    safezoneY + ' + pos.y + ' * safezoneH,\n';
+            code += '    ' + speakerW + ' * safezoneW,\n';
+            code += '    0.15 * safezoneH\n';
+            code += '  ];\n';
+            code += '  _speakerCtrl ctrlCommit 0;\n\n';
+
+            code += '  private _subCtrl = uiNamespace getVariable ["SB_subtitleTextCtrl", controlNull];\n';
+            code += '  if (isNull _subCtrl) then {\n';
+            code += '    _subCtrl = (findDisplay 46) ctrlCreate ["RscStructuredText", -1];\n';
+            code += '    uiNamespace setVariable ["SB_subtitleTextCtrl", _subCtrl];\n';
+            code += '  };\n';
+            code += '  _subCtrl ctrlSetBackgroundColor [0, 0, 0, 0];\n';
+            code += '  _subCtrl ctrlSetPosition [\n';
+            code += '    safezoneX + ' + round2(pos.x + speakerW) + ' * safezoneW,\n';
+            code += '    safezoneY + ' + pos.y + ' * safezoneH,\n';
+            code += '    ' + subW + ' * safezoneW,\n';
+            code += '    0.15 * safezoneH\n';
+            code += '  ];\n';
+            code += '  _subCtrl ctrlCommit 0;\n';
+          } else if (hasPos) {
+            // Stacked positioned mode — single control
+            code += '  private _ctrl = uiNamespace getVariable ["SB_subtitleCtrl", controlNull];\n';
+            code += '  if (isNull _ctrl) then {\n';
+            code += '    _ctrl = (findDisplay 46) ctrlCreate ["RscStructuredText", -1];\n';
+            code += '    uiNamespace setVariable ["SB_subtitleCtrl", _ctrl];\n';
+            code += '  };\n';
+            code += '  _ctrl ctrlSetBackgroundColor [0, 0, 0, 0];\n';
+            code += '  _ctrl ctrlSetPosition [\n';
+            code += '    safezoneX + ' + pos.x + ' * safezoneW,\n';
+            code += '    safezoneY + ' + pos.y + ' * safezoneH,\n';
+            code += '    ' + pos.w + ' * safezoneW,\n';
+            code += '    0.15 * safezoneH\n';
+            code += '  ];\n';
+            code += '  _ctrl ctrlCommit 0;\n';
+          }
+
+          if (sorted[0] && sorted[0].start > 0) {
+            code += '  sleep ' + round2(sorted[0].start) + ';\n';
+          }
+
+          sorted.forEach((entry, idx) => {
+            if (idx > 0) {
+              const sleepBefore = entry.start - prevEnd;
+              if (sleepBefore > 0) {
+                code += '  sleep ' + round2(sleepBefore) + ';\n';
+              }
+            }
+
+            const entryTitle = strip ? processText(entry.title) : entry.title;
+            const entrySub = strip ? processText(entry.subtitle) : entry.subtitle;
+            let t = escapeSQF(entryTitle);
+            if (titleTransform === 'uppercase') t = t.toUpperCase();
+            const s = escapeSQF(entrySub);
+
+            code += '\n';
+
+            if (isInlinePos) {
+              const speakerDecl = idx === 0 ? 'private _speakerText' : '_speakerText';
+              const subDecl = idx === 0 ? 'private _subText' : '_subText';
+
+              code += '  ' + speakerDecl + ' = format [\n';
+              code += '    "' + speakerFmtStr + '",\n';
+              code += '    ' + ts + ', "' + tc + '", "' + font + '", "' + t + '"\n';
+              code += '  ];\n';
+              code += '  ' + subDecl + ' = format [\n';
+              code += '    "' + subtitleOnlyFmtStr + '",\n';
+              code += '    ' + ss + ', "' + sc + '", "' + font + '", "' + s + '"\n';
+              code += '  ];\n';
+              code += '  _speakerCtrl ctrlSetStructuredText parseText _speakerText;\n';
+              code += '  _speakerCtrl ctrlSetFade 0;\n';
+              code += '  _speakerCtrl ctrlCommit 0;\n';
+              code += '  _subCtrl ctrlSetStructuredText parseText _subText;\n';
+              code += '  _subCtrl ctrlSetFade 0;\n';
+              code += '  _subCtrl ctrlCommit 0;\n';
+            } else {
+              const varDecl = idx === 0 ? 'private _text' : '_text';
+
+              code += '  ' + varDecl + ' = format [\n';
+              code += '    "' + multiFmtStr + '",\n';
+              code += '    ' + ts + ', "' + tc + '", "' + font + '", "' + t + '",\n';
+              code += '    ' + ss + ', "' + sc + '", "' + s + '"\n';
+              code += '  ];\n';
+
+              if (hasPos) {
+                code += '  _ctrl ctrlSetStructuredText parseText _text;\n';
+                code += '  _ctrl ctrlSetFade 0;\n';
+                code += '  _ctrl ctrlCommit 0;\n';
+              } else {
+                code += '  "SB_subtitle" cutText [_text, "' + (layout === 'inline' ? 'PLAIN' : 'PLAIN DOWN') + '", -1, true, true];\n';
+              }
+            }
+
+            code += '  sleep ' + round2(entry.duration) + ';\n';
+            prevEnd = entry.start + entry.duration;
+          });
+
+          // Fade out at end
+          if (isInlinePos) {
+            code += '  _speakerCtrl ctrlSetFade 1;\n';
+            code += '  _subCtrl ctrlSetFade 1;\n';
+            code += '  _speakerCtrl ctrlCommit 0.5;\n';
+            code += '  _subCtrl ctrlCommit 0.5;\n';
+            code += '  sleep 0.5;\n';
+            code += '  ctrlDelete _speakerCtrl;\n';
+            code += '  ctrlDelete _subCtrl;\n';
+            code += '  uiNamespace setVariable ["SB_subtitleSpeakerCtrl", controlNull];\n';
+            code += '  uiNamespace setVariable ["SB_subtitleTextCtrl", controlNull];\n';
+          } else if (hasPos) {
+            code += '  _ctrl ctrlSetFade 1;\n';
+            code += '  _ctrl ctrlCommit 0.5;\n';
+            code += '  sleep 0.5;\n';
+            code += '  ctrlDelete _ctrl;\n';
+            code += '  uiNamespace setVariable ["SB_subtitleCtrl", controlNull];\n';
+          } else {
+            code += '  "SB_subtitle" cutFadeOut 0.5;\n';
+          }
+
+          code += '};\n';
+
+        } else {
+          code += '[] spawn {\n';
+          sorted.forEach((entry, idx) => {
+            const sleepBefore = entry.start - prevEnd;
+
+            if (idx > 0 && sleepBefore > 0) {
+              code += '  sleep ' + round2(sleepBefore) + ';\n';
+            }
+
+            if (idx === 0 && entry.start > 0) {
+              code += '  sleep ' + round2(entry.start) + ';\n';
+            }
+
+            const entryTitle = strip ? processText(entry.title) : entry.title;
+            const entrySub = strip ? processText(entry.subtitle) : entry.subtitle;
+
+            if (format === 'subtitle') {
+              const nextEntry = sorted[idx + 1];
+              const sameSpeakerNext = nextEntry && nextEntry.title === entry.title;
+              const fadeOut = !sameSpeakerNext;
+
+              code += '  ' + formatSubtitleCall(entryTitle, entrySub, entry.duration, tc, sc, ts, ss, font, fadeOut, sqfMode, pos, getActiveLayout(), getActiveTitleTransform()) + '\n';
+              code += '  sleep ' + round2(entry.duration) + ';\n';
+            } else {
+              code += '  ' + formatSideTitleCall(entryTitle, entrySub, tc) + '\n';
+              code += '  sleep ' + round2(entry.duration) + ';\n';
+            }
+
+            prevEnd = entry.start + entry.duration;
+          });
+          code += '};\n';
+        }
+
+        output.textContent = code;
+      }
+
+      const _histLabel = '[' + ($('stylePreset').value || 'custom') + '] '
+        + (timeline.length > 0 ? timeline[0].title : ($('previewTitle').value || 'Untitled'));
+      saveHistoryEntry(_histLabel);
+      renderHistory();
+      switchTab('code');
+    }
+
+    function getActiveLayout() {
+      const key = $('stylePreset').value;
+      const preset = STYLE_PRESETS[key];
+      return preset ? (preset.layout || 'stacked') : 'stacked';
+    }
+
+    function getActiveTitleTransform() {
+      const key = $('stylePreset').value;
+      const preset = STYLE_PRESETS[key];
+      return preset ? (preset.titleTransform || '') : '';
+    }
+
+    function formatSubtitleCall(title, subtitle, duration, titleColor, subtitleColor, titleSize, subSize, font, fadeOut, mode, pos, layout, titleTransform) {
+      layout = layout || 'stacked';
+      let t = escapeSQF(title);
+      if (titleTransform === 'uppercase') t = t.toUpperCase();
+      const s = escapeSQF(subtitle);
+      const d = round2(duration);
+      const hasPos = pos && (pos.x !== undefined);
+      const isInline = layout === 'inline';
+
+      // Build format string based on layout
+      const fmtStr = isInline
+        ? "<t align='left' size='%1' color='%2' font='%3'>%4:  </t><t align='left' size='%5' color='%6' font='%3'>%7</t>"
+        : "<t align='center' size='%1' color='%2' font='%3'>%4</t><br/><t align='center' size='%5' color='%6' font='%3'>%7</t>";
+      const cutTextEffect = isInline ? 'PLAIN' : 'PLAIN DOWN';
+
+      if (mode === 'inline') {
+        // Inline spawn mode — self-contained, no external function needed
+        let code = '[] spawn {\n';
+        const isInlinePos = hasPos && isInline;
+
+        if (isInlinePos) {
+          // Inline positioned mode — two split controls for stable speaker
+          const splitRatio = 0.45;
+          const speakerW = round2(pos.w * splitRatio);
+          const subW = round2(pos.w * (1 - splitRatio));
+          const speakerFmt = "<t align='right' size='%1' color='%2' font='%3'>%4:  </t>";
+          const subFmt = "<t align='left' size='%1' color='%2' font='%3'>%4</t>";
+
+          code += '  // Speaker control (right-aligned, fixed position)\n';
+          code += '  private _speakerCtrl = uiNamespace getVariable ["SB_subtitleSpeakerCtrl", controlNull];\n';
+          code += '  if (isNull _speakerCtrl) then {\n';
+          code += '    _speakerCtrl = (findDisplay 46) ctrlCreate ["RscStructuredText", -1];\n';
+          code += '    uiNamespace setVariable ["SB_subtitleSpeakerCtrl", _speakerCtrl];\n';
+          code += '  };\n';
+          code += '  private _speakerText = format [\n';
+          code += '    "' + speakerFmt + '",\n';
+          code += '    ' + titleSize + ', "' + titleColor + '", "' + font + '", "' + t + '"\n';
+          code += '  ];\n';
+          code += '  _speakerCtrl ctrlSetStructuredText parseText _speakerText;\n';
+          code += '  _speakerCtrl ctrlSetBackgroundColor [0, 0, 0, 0];\n';
+          code += '  _speakerCtrl ctrlSetFade 0;\n';
+          code += '  _speakerCtrl ctrlSetPosition [\n';
+          code += '    safezoneX + ' + pos.x + ' * safezoneW,\n';
+          code += '    safezoneY + ' + pos.y + ' * safezoneH,\n';
+          code += '    ' + speakerW + ' * safezoneW,\n';
+          code += '    0.15 * safezoneH\n';
+          code += '  ];\n';
+          code += '  _speakerCtrl ctrlCommit 0;\n\n';
+
+          code += '  // Subtitle control (left-aligned, starts after speaker)\n';
+          code += '  private _subCtrl = uiNamespace getVariable ["SB_subtitleTextCtrl", controlNull];\n';
+          code += '  if (isNull _subCtrl) then {\n';
+          code += '    _subCtrl = (findDisplay 46) ctrlCreate ["RscStructuredText", -1];\n';
+          code += '    uiNamespace setVariable ["SB_subtitleTextCtrl", _subCtrl];\n';
+          code += '  };\n';
+          code += '  private _subText = format [\n';
+          code += '    "' + subFmt + '",\n';
+          code += '    ' + subSize + ', "' + subtitleColor + '", "' + font + '", "' + s + '"\n';
+          code += '  ];\n';
+          code += '  _subCtrl ctrlSetStructuredText parseText _subText;\n';
+          code += '  _subCtrl ctrlSetBackgroundColor [0, 0, 0, 0];\n';
+          code += '  _subCtrl ctrlSetFade 0;\n';
+          code += '  _subCtrl ctrlSetPosition [\n';
+          code += '    safezoneX + ' + round2(pos.x + speakerW) + ' * safezoneW,\n';
+          code += '    safezoneY + ' + pos.y + ' * safezoneH,\n';
+          code += '    ' + subW + ' * safezoneW,\n';
+          code += '    0.15 * safezoneH\n';
+          code += '  ];\n';
+          code += '  _subCtrl ctrlCommit 0;\n';
+          if (fadeOut !== false) {
+            code += '  sleep ' + d + ';\n';
+            code += '  _speakerCtrl ctrlSetFade 1;\n';
+            code += '  _subCtrl ctrlSetFade 1;\n';
+            code += '  _speakerCtrl ctrlCommit 0.5;\n';
+            code += '  _subCtrl ctrlCommit 0.5;\n';
+            code += '  sleep 0.5;\n';
+            code += '  ctrlDelete _speakerCtrl;\n';
+            code += '  ctrlDelete _subCtrl;\n';
+            code += '  uiNamespace setVariable ["SB_subtitleSpeakerCtrl", controlNull];\n';
+            code += '  uiNamespace setVariable ["SB_subtitleTextCtrl", controlNull];\n';
+          }
+        } else if (hasPos) {
+          // Stacked positioned mode — single control
+          code += '  private _ctrl = uiNamespace getVariable ["SB_subtitleCtrl", controlNull];\n';
+          code += '  if (isNull _ctrl) then {\n';
+          code += '    _ctrl = (findDisplay 46) ctrlCreate ["RscStructuredText", -1];\n';
+          code += '    uiNamespace setVariable ["SB_subtitleCtrl", _ctrl];\n';
+          code += '  };\n';
+          code += '  private _text = format [\n';
+          code += '    "' + fmtStr + '",\n';
+          code += '    ' + titleSize + ', "' + titleColor + '", "' + font + '", "' + t + '",\n';
+          code += '    ' + subSize + ', "' + subtitleColor + '", "' + s + '"\n';
+          code += '  ];\n';
+          code += '  _ctrl ctrlSetStructuredText parseText _text;\n';
+          code += '  _ctrl ctrlSetBackgroundColor [0, 0, 0, 0];\n';
+          code += '  _ctrl ctrlSetFade 0;\n';
+          code += '  _ctrl ctrlSetPosition [\n';
+          code += '    safezoneX + ' + pos.x + ' * safezoneW,\n';
+          code += '    safezoneY + ' + pos.y + ' * safezoneH,\n';
+          code += '    ' + pos.w + ' * safezoneW,\n';
+          code += '    0.15 * safezoneH\n';
+          code += '  ];\n';
+          code += '  _ctrl ctrlCommit 0;\n';
+          if (fadeOut !== false) {
+            code += '  sleep ' + d + ';\n';
+            code += '  _ctrl ctrlSetFade 1;\n';
+            code += '  _ctrl ctrlCommit 0.5;\n';
+            code += '  sleep 0.5;\n';
+            code += '  ctrlDelete _ctrl;\n';
+            code += '  uiNamespace setVariable ["SB_subtitleCtrl", controlNull];\n';
+          }
+        } else {
+          // Classic cutText mode (center-bottom)
+          code += '  private _text = format [\n';
+          code += '    "' + fmtStr + '",\n';
+          code += '    ' + titleSize + ', "' + titleColor + '", "' + font + '", "' + t + '",\n';
+          code += '    ' + subSize + ', "' + subtitleColor + '", "' + s + '"\n';
+          code += '  ];\n';
+          code += '  "SB_subtitle" cutText [_text, "' + cutTextEffect + '", -1, true, true];\n';
+          if (fadeOut !== false) {
+            code += '  sleep ' + d + ';\n';
+            code += '  "SB_subtitle" cutFadeOut 0.5;\n';
+          }
+        }
+
+        code += '};';
+        return code;
+      }
+
+      // Function call mode (default)
+      const defaultColors = (titleColor === '#3399FF' && subtitleColor === '#FFFFFF');
+      const defaultSizes = (titleSize === 2.2 && subSize === 1.8);
+      const defaultFont = (font === 'PuristaSemibold');
+      const needsLayout = isInline;
+
+      let params = '["' + t + '", "' + s + '", ' + d;
+
+      // Layout requires all intermediate params to be included
+      const needsPos = hasPos || needsLayout;
+      const needsFont = !defaultFont || needsPos;
+      const needsSizes = !defaultSizes || needsFont;
+      const needsColors = !defaultColors || needsSizes;
+      const needsFadeOut = fadeOut === false || needsColors;
+
+      if (needsPos) {
+        // Include everything up to position
+        params += ', "' + titleColor + '", "' + subtitleColor + '", ' + (fadeOut === false ? 'false' : 'true');
+        params += ', ' + titleSize + ', ' + subSize;
+        params += ', "' + font + '"';
+        if (hasPos) {
+          params += ', ' + pos.x + ', ' + pos.y + ', ' + pos.w;
+        } else {
+          params += ', -1, -1, 0.8';
+        }
+        if (needsLayout) {
+          params += ', "inline"';
+        }
+      } else if (needsFont) {
+        params += ', "' + titleColor + '", "' + subtitleColor + '", ' + (fadeOut === false ? 'false' : 'true');
+        params += ', ' + titleSize + ', ' + subSize;
+        params += ', "' + font + '"';
+      } else if (needsSizes) {
+        params += ', "' + titleColor + '", "' + subtitleColor + '", true';
+        params += ', ' + titleSize + ', ' + subSize;
+      } else if (needsColors) {
+        params += ', "' + titleColor + '", "' + subtitleColor + '"';
+      }
+
+      params += ']';
+      return params + ' remoteExec ["SB_fnc_createSubtitle", 0];';
+    }
+
+    function formatSideTitleCall(title, subtitle, color) {
+      return '["' + escapeSQF(title) + '", "' + escapeSQF(subtitle) + '", "' + color + '"] remoteExec ["SB_fnc_createSideTitle", 0];';
+    }
+
+    function escapeSQF(s) {
+      return s.replace(/\\/g, '\\\\').replace(/"/g, '""');
+    }
+
+    function round2(n) {
+      return Math.round(n * 100) / 100;
+    }
+
+    function copyCode() {
+      const code = $('codeOutput').textContent;
+      navigator.clipboard.writeText(code).then(() => {
+        toast('Copied to clipboard');
+      }).catch(() => {
+        const range = document.createRange();
+        range.selectNodeContents($('codeOutput'));
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        toast('Select and copy manually (Ctrl+C)');
+      });
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  CfgSounds GENERATION
+    // ═══════════════════════════════════════════════════════
+
+    function generateCfgSounds() {
+      const soundClass = ($('soundClassName').value || '').trim();
+      const fileInput = $('audioFile');
+      const output = $('cfgSoundsOutput');
+
+      if (!soundClass) {
+        output.textContent = '// Enter a Sound Class Name in the Subtitle & Audio section first.';
+        switchTab('cfgsounds');
+        return;
+      }
+
+      let fileName = 'sounds\\yourAudioFile.ogg';
+      if (fileInput.files && fileInput.files[0]) {
+        const name = fileInput.files[0].name;
+        fileName = 'sounds\\' + name;
+      }
+
+      let code = '// Add this to your mission\'s description.ext\n';
+      code += '// Place your audio file in the mission folder: ' + fileName + '\n\n';
+      code += 'class CfgSounds {\n';
+      code += '    class ' + soundClass + ' {\n';
+      code += '        name = "' + soundClass + '";\n';
+      code += '        sound[] = {"' + fileName + '", db+0, 1, 100};\n';
+      code += '        titles[] = {};\n';
+      code += '    };\n';
+      code += '};\n';
+
+      output.textContent = code;
+      switchTab('cfgsounds');
+    }
+
+    function copyCfgSounds() {
+      generateCfgSounds();
+      const code = $('cfgSoundsOutput').textContent;
+      navigator.clipboard.writeText(code).then(() => {
+        toast('CfgSounds copied');
+      }).catch(() => toast('Copy failed'));
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  HISTORY
+    // ═══════════════════════════════════════════════════════
+
+    const HISTORY_MAX = 15;
+    const HISTORY_KEY = 'arma3_subtitle_history';
+
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function captureSnapshot(label, sourceFile) {
+      return {
+        timestamp: new Date().toISOString(),
+        label: label || 'Untitled',
+        sourceFile: sourceFile || null,
+        previewTitle: $('previewTitle').value,
+        previewSubtitle: $('previewSubtitle').value,
+        titleColor: $('titleColor').value,
+        subtitleColor: $('subtitleColor').value,
+        titleSize: $('titleSize').value,
+        subtitleSize: $('subtitleSize').value,
+        previewDuration: $('previewDuration').value,
+        outputFormat: $('outputFormat').value,
+        manualDuration: $('manualDuration').value,
+        transcriptText: $('transcriptText').value,
+        maxCharsPerEntry: $('maxCharsPerEntry').value,
+        targetCPS: $('targetCPS').value,
+        stylePreset: $('stylePreset').value,
+        fontSelect: $('fontSelect').value,
+        positionPreset: $('positionPreset').value,
+        stripPunctuation: $('stripPunctuation').checked,
+        showArmaUI: $('showArmaUI').checked,
+        enableFade: fadeEnabled,
+        sqfMode: $('sqfMode').value,
+        includePlaySound: $('includePlaySound').checked,
+        soundClassName: $('soundClassName').value,
+        timeline: JSON.parse(JSON.stringify(timeline))
+      };
+    }
+
+    function loadHistoryEntries() {
+      try {
+        const raw = localStorage.getItem(HISTORY_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveHistoryEntry(label, sourceFile, overrideEntry) {
+      try {
+        const entry = overrideEntry || captureSnapshot(label, sourceFile);
+        if (label) entry.label = label;
+        if (sourceFile) entry.sourceFile = sourceFile;
+        const entries = loadHistoryEntries();
+        entries.unshift(entry);
+        while (entries.length > HISTORY_MAX) entries.pop();
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(entries));
+      } catch (e) { }
+    }
+
+    function renderHistory() {
+      const entries = loadHistoryEntries();
+      const list = $('historyList');
+      const empty = $('historyEmpty');
+      if (entries.length === 0) {
+        list.innerHTML = '';
+        empty.style.display = '';
+        return;
+      }
+      empty.style.display = 'none';
+      list.innerHTML = entries.map((entry, i) => {
+        const dt = new Date(entry.timestamp).toLocaleString(undefined, {
+          month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
+        const preset = entry.stylePreset || 'custom';
+        const entryCount = (entry.timeline && entry.timeline.length > 0)
+          ? entry.timeline.length + ' entr' + (entry.timeline.length === 1 ? 'y' : 'ies')
+          : 'no timeline';
+        const fileTag = entry.sourceFile
+          ? ' &middot; <span class="hist-filename">' + escapeHtml(entry.sourceFile) + '</span>'
+          : '';
+        return '<div class="hist-card">'
+          + '<div class="hist-card-info">'
+          + '<div class="hist-card-label">' + escapeHtml(entry.label) + '</div>'
+          + '<div class="hist-card-meta">' + escapeHtml(dt) + ' &middot; ' + escapeHtml(preset) + ' &middot; ' + entryCount + fileTag + '</div>'
+          + '</div>'
+          + '<div class="hist-card-actions">'
+          + '<button class="btn btn-small" onclick="restoreHistoryEntry(' + i + ')">Restore</button>'
+          + '<button class="remove-btn" onclick="deleteHistoryEntry(' + i + ')" title="Delete entry">\xd7</button>'
+          + '</div>'
+          + '</div>';
+      }).join('');
+    }
+
+    function restoreHistoryEntry(index) {
+      const entries = loadHistoryEntries();
+      const p = entries[index];
+      if (!p) return;
+
+      $('previewTitle').value = p.previewTitle || '';
+      $('previewSubtitle').value = p.previewSubtitle || '';
+      $('titleColor').value = p.titleColor || '#3399FF';
+      $('titleColorHex').value = p.titleColor || '#3399FF';
+      $('subtitleColor').value = p.subtitleColor || '#FFFFFF';
+      $('subtitleColorHex').value = p.subtitleColor || '#FFFFFF';
+      $('titleSize').value = p.titleSize || '1.3';
+      $('titleSizeVal').textContent = p.titleSize || '1.3';
+      $('subtitleSize').value = p.subtitleSize || '1.1';
+      $('subtitleSizeVal').textContent = p.subtitleSize || '1.1';
+      $('previewDuration').value = p.previewDuration || '5';
+      $('outputFormat').value = p.outputFormat || 'subtitle';
+      $('manualDuration').value = p.manualDuration || '';
+      $('transcriptText').value = p.transcriptText || '';
+      $('maxCharsPerEntry').value = p.maxCharsPerEntry || '70';
+      $('targetCPS').value = p.targetCPS || '15';
+      $('stylePreset').value = p.stylePreset || 'blufor';
+      $('fontSelect').value = p.fontSelect || 'PuristaSemibold';
+      $('positionPreset').value = p.positionPreset || 'center-bottom';
+      $('stripPunctuation').checked = !!p.stripPunctuation;
+      $('showArmaUI').checked = !!p.showArmaUI;
+      fadeEnabled = p.enableFade !== false;
+      $('fadeToggleBtn').classList.toggle('btn-accent', fadeEnabled);
+      $('durationRow').style.display = fadeEnabled ? '' : 'none';
+      if (p.sqfMode) $('sqfMode').value = p.sqfMode;
+      $('includePlaySound').checked = !!p.includePlaySound;
+      $('soundClassName').value = p.soundClassName || '';
+
+      timeline = p.timeline ? JSON.parse(JSON.stringify(p.timeline)) : [];
+      renderTimeline();
+      updatePreviewText();
+      updatePreviewStyle();
+      applyPositionPreset();
+      toggleArmaUI();
+      switchTab('timeline');
+      toast('History entry restored');
+    }
+
+    function deleteHistoryEntry(index) {
+      try {
+        const entries = loadHistoryEntries();
+        entries.splice(index, 1);
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(entries));
+        renderHistory();
+      } catch (e) { }
+    }
+
+    function clearHistory() {
+      if (!confirm('Clear all generation history?')) return;
+      localStorage.removeItem(HISTORY_KEY);
+      renderHistory();
+      toast('History cleared');
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  TABS
+    // ═══════════════════════════════════════════════════════
+
+    function switchTab(name) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+
+      document.querySelector('.tab-btn[onclick*="' + name + '"]').classList.add('active');
+      $('tab-' + name).classList.add('active');
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  SAVE / LOAD (localStorage)
+    // ═══════════════════════════════════════════════════════
+
+    function saveProject() {
+      const project = {
+        previewTitle: $('previewTitle').value,
+        previewSubtitle: $('previewSubtitle').value,
+        titleColor: $('titleColor').value,
+        subtitleColor: $('subtitleColor').value,
+        titleSize: $('titleSize').value,
+        subtitleSize: $('subtitleSize').value,
+        previewDuration: $('previewDuration').value,
+        outputFormat: $('outputFormat').value,
+        manualDuration: $('manualDuration').value,
+        transcriptTitle: $('previewTitle').value,
+        transcriptText: $('transcriptText').value,
+        maxCharsPerEntry: $('maxCharsPerEntry').value,
+        targetCPS: $('targetCPS').value,
+        stylePreset: $('stylePreset').value,
+        fontSelect: $('fontSelect').value,
+        positionPreset: $('positionPreset').value,
+        stripPunctuation: $('stripPunctuation').checked,
+        showArmaUI: $('showArmaUI').checked,
+        enableFade: fadeEnabled,
+        sqfMode: $('sqfMode').value,
+        includePlaySound: $('includePlaySound').checked,
+        soundClassName: $('soundClassName').value,
+        timeline: timeline
+      };
+
+      try {
+        localStorage.setItem('arma3_subtitle_project', JSON.stringify(project));
+        $('saveStatus').textContent = 'Saved at ' + new Date().toLocaleTimeString();
+        $('saveStatus').style.color = '#44cc44';
+        toast('Project saved');
+      } catch (e) {
+        toast('Save failed: ' + e.message);
+      }
+    }
+
+    function loadProject() {
+      try {
+        const raw = localStorage.getItem('arma3_subtitle_project');
+        if (!raw) { toast('No saved project found'); return; }
+
+        const project = JSON.parse(raw);
+
+        $('previewTitle').value = project.previewTitle || '';
+        $('previewSubtitle').value = project.previewSubtitle || '';
+        $('titleColor').value = project.titleColor || '#3399FF';
+        $('titleColorHex').value = project.titleColor || '#3399FF';
+        $('subtitleColor').value = project.subtitleColor || '#FFFFFF';
+        $('subtitleColorHex').value = project.subtitleColor || '#FFFFFF';
+        $('titleSize').value = project.titleSize || '1.3';
+        $('titleSizeVal').textContent = project.titleSize || '1.3';
+        $('subtitleSize').value = project.subtitleSize || '1.1';
+        $('subtitleSizeVal').textContent = project.subtitleSize || '1.1';
+        $('previewDuration').value = project.previewDuration || '5';
+        $('outputFormat').value = project.outputFormat || 'subtitle';
+        $('manualDuration').value = project.manualDuration || '';
+        $('previewTitle').value = project.transcriptTitle || project.previewTitle || '';
+        $('transcriptText').value = project.transcriptText || '';
+        $('maxCharsPerEntry').value = project.maxCharsPerEntry || '70';
+        $('targetCPS').value = project.targetCPS || '15';
+        $('stylePreset').value = project.stylePreset || 'blufor';
+        $('fontSelect').value = project.fontSelect || 'PuristaSemibold';
+        $('positionPreset').value = project.positionPreset || 'center-bottom';
+        $('stripPunctuation').checked = !!project.stripPunctuation;
+        $('showArmaUI').checked = !!project.showArmaUI;
+        fadeEnabled = project.enableFade !== false;
+        $('fadeToggleBtn').classList.toggle('btn-accent', fadeEnabled);
+        $('durationRow').style.display = fadeEnabled ? '' : 'none';
+
+        // Restore new fields
+        if (project.sqfMode) $('sqfMode').value = project.sqfMode;
+        $('includePlaySound').checked = !!project.includePlaySound;
+        $('soundClassName').value = project.soundClassName || '';
+
+        timeline = project.timeline || [];
+        renderTimeline();
+        updatePreviewText();
+        updatePreviewStyle();
+        applyPositionPreset();
+        toggleArmaUI();
+
+        $('saveStatus').textContent = 'Loaded';
+        $('saveStatus').style.color = '#3399FF';
+        toast('Project loaded');
+      } catch (e) {
+        toast('Load failed: ' + e.message);
+      }
+    }
+
+    function clearProject() {
+      if (!confirm('Clear all entries and reset?')) return;
+      timeline = [];
+      renderTimeline();
+      $('transcriptText').value = '';
+      toast('Cleared');
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  TOAST
+    // ═══════════════════════════════════════════════════════
+
+    function toast(msg) {
+      const el = $('toast');
+      el.textContent = msg;
+      el.classList.add('show');
+      clearTimeout(el._timer);
+      el._timer = setTimeout(() => el.classList.remove('show'), 2500);
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  INIT
+    // ═══════════════════════════════════════════════════════
+
+    (function init() {
+      loadCustomPresetsIntoState();
+      syncColors();
+      setupLivePreview();
+      initTranscribeButton();
+      renderTimeline();
+      renderHistory();
+      updatePreviewStyle();
+      applyPositionPreset();
+      toggleArmaUI();
+
+      // Try auto-loading last project
+      try {
+        const raw = localStorage.getItem('arma3_subtitle_project');
+        if (raw) {
+          $('saveStatus').textContent = 'Previous project available — click Load';
+          $('saveStatus').style.color = '#666';
+        }
+      } catch (e) { }
+    })();
+  </script>
+
+</body>
+
+</html>

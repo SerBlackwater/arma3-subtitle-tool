@@ -1,0 +1,16 @@
+# Defaults
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+*.swp
+*.swo
+
+# Local test/scratch files
+scratch.*
+test.*
+preview.gif
+preview.mp4
+preview.png
