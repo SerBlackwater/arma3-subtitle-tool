@@ -1,0 +1,57 @@
+name: Bug Report
+description: Something isn't working correctly in the subtitle tool
+title: "[BUG] "
+labels: [bug]
+body:
+  - type: textarea
+    id: what-went-wrong
+    attributes:
+      label: What went wrong?
+      description: Describe the problem in your own words. What did you see or get that you didn't expect?
+      placeholder: e.g. "The preview went blank after I changed the preset."
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-were-you-doing
+    attributes:
+      label: What were you trying to do?
+      placeholder: e.g. "I was generating subtitles using the Halo preset and clicking Generate."
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-did-you-expect
+    attributes:
+      label: What did you expect to happen?
+      placeholder: e.g. "I expected the code to appear in the Code tab."
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: area
+    attributes:
+      label: Which part of the tool was involved?
+      description: Check all that apply.
+      options:
+        - label: Generating SQF code
+        - label: Style presets
+        - label: Timeline / subtitle entries
+        - label: Whisper AI transcription
+        - label: CfgSounds tab
+        - label: History tab
+        - label: Save / Load project
+        - label: Preview panel
+
+  - type: input
+    id: browser-os
+    attributes:
+      label: Browser and OS
+      placeholder: e.g. Chrome on Windows 11
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Screenshots are very helpful — you can drag and drop images directly into this box.
+

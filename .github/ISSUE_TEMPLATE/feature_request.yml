@@ -1,0 +1,44 @@
+name: Feature Request
+description: Suggest an improvement or new feature for the subtitle tool
+title: "[FEATURE] "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: what-to-add
+    attributes:
+      label: What would you like to see added or improved?
+      description: Describe your idea in plain terms. No technical detail needed — just what you'd want it to do.
+      placeholder: e.g. "It would be great if I could export the timeline as a CSV."
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve for you?
+      placeholder: e.g. "Right now I have to manually adjust every entry after transcribing. It would save a lot of time if..."
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: area
+    attributes:
+      label: Which part of the tool is this about?
+      description: Check all that apply.
+      options:
+        - label: Generating SQF code
+        - label: Style presets
+        - label: Timeline / subtitle entries
+        - label: Whisper AI transcription
+        - label: CfgSounds tab
+        - label: History tab
+        - label: Save / Load project
+        - label: Preview panel
+        - label: Overall look and feel
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Mockups, examples from other tools, or screenshots are all welcome. You can drag and drop images directly into this box.
+
