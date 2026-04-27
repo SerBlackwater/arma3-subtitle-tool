@@ -6,31 +6,24 @@ labels: enhancement
 assignees: ''
 ---
 
-## Summary
-<!-- A brief one-line description of the feature. -->
+## What would you like to see added or improved?
+<!-- Describe your idea in plain terms. No technical detail needed — just what you'd want it to do. -->
 
-## Problem / Motivation
-<!-- What's the current limitation or pain point? Why is this needed? -->
+## What problem does this solve for you?
+<!-- e.g. "Right now I have to manually adjust every entry after transcribing. It would save a lot of time if..." -->
 
-## Proposed Solution
-<!-- Describe what you'd like to see added or changed. Be as specific as you can. -->
-
-## Affected Area
+## Which part of the tool is this about?
 <!-- Check all that apply. -->
-- [ ] SQF code generation (function call / inline mode)
+- [ ] Generating SQF code
 - [ ] Style presets
-- [ ] Timeline editor
+- [ ] Timeline / subtitle entries
 - [ ] Whisper AI transcription
-- [ ] CfgSounds generator
+- [ ] CfgSounds tab
 - [ ] History tab
-- [ ] Project save / load
+- [ ] Save / Load project
 - [ ] Preview panel
-- [ ] UI / UX
-- [ ] fn_createSubtitle.sqf companion function
-- [ ] Other: 
+- [ ] Overall look and feel
+- [ ] Something else: 
 
-## Alternatives Considered
-<!-- Any workarounds you currently use, or other approaches you thought about. -->
-
-## Additional Context
-<!-- Mockups, screenshots, links to Arma 3 wiki pages, or anything else helpful. -->
+## Anything else?
+<!-- Mockups, examples from other tools, or screenshots are all welcome. Drag and drop images directly into this box. -->

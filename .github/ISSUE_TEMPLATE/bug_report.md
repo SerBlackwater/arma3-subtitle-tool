@@ -6,37 +6,29 @@ labels: bug
 assignees: ''
 ---
 
-## Description
-<!-- A clear and concise description of the bug. -->
+## What went wrong?
+<!-- Describe the problem in your own words. What did you see or get that you didn't expect? -->
 
-## Steps to Reproduce
-1. 
-2. 
-3. 
+## What were you trying to do?
+<!-- e.g. "I was generating subtitles using the Halo preset and clicking Generate..." -->
 
-## Expected Behaviour
-<!-- What should have happened? -->
+## What did you expect to happen?
+<!-- e.g. "I expected the code to appear in the Code tab." -->
 
-## Actual Behaviour
-<!-- What actually happened? Include any error messages or unexpected SQF output. -->
+## Which part of the tool was involved?
+<!-- Check all that apply. -->
+- [ ] Generating SQF code
+- [ ] Style presets
+- [ ] Timeline / subtitle entries
+- [ ] Whisper AI transcription
+- [ ] CfgSounds tab
+- [ ] History tab
+- [ ] Save / Load project
+- [ ] Preview panel
+- [ ] Something else: 
 
-## SQF Output (if relevant)
-<!-- Paste the generated SQF code here if the issue relates to incorrect output. -->
-```sqf
+## Browser and OS
+<!-- e.g. Chrome on Windows 11, Firefox on Windows 10 -->
 
-```
-
-## Settings Used
-<!-- Fill in whatever is relevant to the bug. -->
-- **Output mode**: <!-- Function call / Inline cutText spawn -->
-- **Style preset**: <!-- e.g. BLUFOR, COD Ally, Halo, Custom -->
-- **Transcription used**: <!-- Yes / No -->
-- **Timeline entries**: <!-- Approximate number -->
-
-## Environment
-- **Browser**: <!-- e.g. Chrome 124, Firefox 126 -->
-- **OS**: <!-- e.g. Windows 11 -->
-- **Tool version**: <!-- Check the page title or CHANGELOG -->
-
-## Additional Context
-<!-- Screenshots, console errors (F12 → Console), or anything else helpful. -->
+## Anything else?
+<!-- Screenshots are very helpful! You can drag and drop images directly into this box. -->
