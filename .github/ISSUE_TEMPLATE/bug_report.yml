@@ -24,6 +24,7 @@ body:
     id: what-did-you-expect
     attributes:
       label: What did you expect to happen?
+      description: What did you think should have happened instead of the problem you encountered?
       placeholder: e.g. "I expected the code to appear in the Code tab."
     validations:
       required: true
@@ -47,7 +48,9 @@ body:
     id: browser-os
     attributes:
       label: Browser and OS
-      placeholder: e.g. Chrome on Windows 11
+      description: What browser and operating system were you using when you encountered the bug?
+      placeholder: e.g. Chrome/Edge/Firefox/Safari on Windows/Mac/Linux
+    validations:
 
   - type: textarea
     id: extra
