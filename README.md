@@ -59,7 +59,7 @@ YourMission.Altis/
 └── description.ext
 ```
 
-### 2. Register function in `description.ext` (replace <TAG>)
+### 2. Register function in `description.ext` (replace `<TAG>`)
 
 ```cpp
 class CfgFunctions {
