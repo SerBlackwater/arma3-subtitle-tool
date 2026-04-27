@@ -1,6 +1,8 @@
 # Arma 3 Subtitle Tool
 
-A self-contained browser-based tool for designing, previewing, and generating multiplayer-safe Arma 3 subtitle sequences — no install, no server, no dependencies.
+A self-contained browser-based tool for designing, previewing, and generating multiplayer-safe Arma 3 subtitle sequences.
+
+![Arma 3 Subtitle Tool preview](.github/assets/preview.png)
 
 > **Beta** — see [CHANGELOG](CHANGELOG.md) for what's included and known issues.
 
