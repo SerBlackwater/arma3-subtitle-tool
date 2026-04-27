@@ -59,11 +59,11 @@ YourMission.Altis/
 └── description.ext
 ```
 
-### 2. Register in `description.ext`
+### 2. Register function in `description.ext` (replace `<TAG>`)
 
 ```cpp
 class CfgFunctions {
-    class SB {
+    class <TAG> {
         class GUI {
             file = "functions";
             class subtitle {};
@@ -72,7 +72,7 @@ class CfgFunctions {
 };
 ```
 
-This registers the function as `SB_fnc_subtitle`.
+This registers the function as `<TAG>_fnc_subtitle`.
 
 ### 3. Sound setup (optional)
 
