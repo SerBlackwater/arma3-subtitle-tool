@@ -16,6 +16,7 @@ body:
     id: problem
     attributes:
       label: What problem does this solve for you?
+      description: What are you trying to do that this feature would help with? 
       placeholder: e.g. "Right now I have to manually adjust every entry after transcribing. It would save a lot of time if..."
     validations:
       required: true
@@ -29,7 +30,6 @@ body:
         - label: Generating SQF code
         - label: Style presets
         - label: Timeline / subtitle entries
-        - label: Whisper AI transcription
         - label: CfgSounds tab
         - label: History tab
         - label: Save / Load project
