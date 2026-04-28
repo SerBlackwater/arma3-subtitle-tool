@@ -5,6 +5,46 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.2.0-beta] — 2026-04-27
+
+### UI Overhaul — Wizard Sidebar & Resizable Layout
+
+#### Wizard-style workflow
+- Sidebar now guides users through three sequential steps: **① Style → ② Subtitle → ③ Generate**
+- Clickable step pills at the top show progress; completed steps display a ✓ checkmark
+- Each step panel has **Next / Back** navigation buttons at the bottom
+- Step 2 opens to a **mode picker** — two large cards (✏ Manual, 🎙 Transcribed) before revealing any fields
+- After picking a mode, a compact **Manual / Transcribed** pill toggle stays visible to switch between them without returning to the picker
+
+#### Subtitle step improvements
+- **Manual mode**: Speaker/Title, Subtitle Text, Preview, Fade Out, and Copy SQF
+- **Transcribed mode**: Speaker/Title input now present (previously missing), Audio File, Sound Class, Duration, Paste Transcript, Auto-Split & Pace, and AI Transcribe
+- Speaker/Title input **syncs automatically** when switching between Manual and Transcribed tabs
+- Auto-Split & Pace and AI Transcribe now apply the **Transcribed pane's Speaker/Title** to all generated timeline entries (falls back to Manual input if empty)
+- Audio & Transcription section merged into the Subtitle step — no longer a separate collapsed section
+
+#### Resizable tab panel
+- Tab area has a **drag handle** at the top to resize the panel height
+- Dragging up expands the timeline/code area over the preview; dragging down shrinks it
+- Handle is a subtle three-line grip icon that glows accent blue on hover and drag
+- Tab panel can expand to near-fullscreen, overlapping the preview frame
+- Minimum height enforced at 150px; maximum capped to the available main area
+
+#### Audio bar
+- Audio playback controls relocated **inside the tabs wrapper**, directly below the tab buttons
+- No longer floats between the preview and the tab area
+
+#### Preview scaling
+- Preview frame content (subtitle text, HUD overlays) now **scales with window size** using CSS container queries
+- Compass, GPS panel, and squad bar slot widths converted from fixed `px` to `cqw` units
+- Subtitle font size scales proportionally — what you see matches Arma proportions at any window width
+
+#### Bug fixes
+- Resize handle drag direction was inverted — fixed; dragging up now correctly expands the panel
+- Resize handle cursor now tracks the mouse accurately (converted from inside-wrapper to true splitter architecture)
+
+---
+
 ## [0.1.0-beta] — 2026-04-26
 
 Initial public beta release.
