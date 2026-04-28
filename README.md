@@ -210,6 +210,6 @@ This is a **beta release**. Please report bugs, unexpected SQF output, or layout
 
 ## Attribution
 
-If you use this tool to build your own version or release a fork publicly, a credit in your code, readme, or release notes is appreciated:
+If you use this tool to build your own version of the tool or release a fork publicly, a credit in your code, readme, or release notes is appreciated:
 
 > Based on [Arma 3 Subtitle Tool](https://github.com/[your-repo]/arma3-subtitle-tool) by SerBlackwater
