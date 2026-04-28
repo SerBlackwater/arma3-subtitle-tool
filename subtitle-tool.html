@@ -267,6 +267,68 @@
     .mode-pane { display: none; }
     .mode-pane.active { display: block; }
 
+    /* ── Mode Picker ── */
+    .mode-picker {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin: 8px 0 12px;
+    }
+
+    .mode-picker-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      background: var(--input-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+      color: var(--text-bright);
+      font-size: 12px;
+      font-family: inherit;
+      cursor: pointer;
+      text-align: left;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .mode-picker-btn:hover {
+      border-color: var(--accent);
+      background: #1a2a3a;
+    }
+
+    .mode-picker-btn .mpb-icon {
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .mode-picker-btn .mpb-label {
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .mode-picker-btn .mpb-desc {
+      font-size: 10px;
+      color: #666;
+      margin-top: 1px;
+    }
+
+    .mode-back {
+      font-size: 11px;
+      color: #666;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0;
+      margin-bottom: 10px;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: color 0.15s;
+    }
+
+    .mode-back:hover { color: var(--text); }
+
     /* ── Preview Area ── */
     .preview-container {
       flex: 1;
@@ -1514,13 +1576,32 @@
           <div class="section-title" onclick="toggleSection(this)"><span>② &nbsp;Subtitle</span> <span class="caret">▼</span></div>
           <div class="section-body">
 
-            <div class="mode-toggle">
-              <button class="active" id="modeManualBtn" onclick="setSubtitleMode('manual')">Manual</button>
-              <button id="modeTranscribeBtn" onclick="setSubtitleMode('transcribe')">Transcribed</button>
+            <!-- Picker -->
+            <div id="modePickerPane">
+              <div class="mode-picker">
+                <button class="mode-picker-btn" onclick="setSubtitleMode('manual')">
+                  <span class="mpb-icon">&#9998;</span>
+                  <div>
+                    <div class="mpb-label">Manual</div>
+                    <div class="mpb-desc">Type speaker and subtitle text directly</div>
+                  </div>
+                </button>
+                <button class="mode-picker-btn" onclick="setSubtitleMode('transcribe')">
+                  <span class="mpb-icon">&#127908;</span>
+                  <div>
+                    <div class="mpb-label">Transcribed</div>
+                    <div class="mpb-desc">Load audio and auto-generate subtitle lines</div>
+                  </div>
+                </button>
+              </div>
             </div>
 
             <!-- Manual pane -->
-            <div class="mode-pane active" id="modeManualPane">
+            <div class="mode-pane" id="modeManualPane">
+              <div class="mode-toggle" style="margin-bottom:10px;">
+                <button class="active" id="modeManualBtn" onclick="setSubtitleMode('manual')">&#9998; Manual</button>
+                <button id="modeTranscribeBtn" onclick="setSubtitleMode('transcribe')">&#127908; Transcribed</button>
+              </div>
               <label>Speaker / Title</label>
               <input type="text" id="previewTitle" value="Incoming Transmission" placeholder="e.g. HQ, CORTANA, Narrator...">
               <label>Subtitle Text <span id="charCounter" style="float:right; font-size:0.85em; color:#888;">46 / 80</span></label>
@@ -1539,6 +1620,12 @@
 
             <!-- Transcribed pane -->
             <div class="mode-pane" id="modeTranscribePane">
+              <div class="mode-toggle" style="margin-bottom:10px;">
+                <button id="modeManualBtn2" onclick="setSubtitleMode('manual')">&#9998; Manual</button>
+                <button class="active" id="modeTranscribeBtn2" onclick="setSubtitleMode('transcribe')">&#127908; Transcribed</button>
+              </div>
+              <label>Speaker / Title</label>
+              <input type="text" id="transcribeSpeaker" placeholder="e.g. HQ, CORTANA, Narrator...">
               <label>Audio File</label>
               <input type="file" id="audioFile" accept="audio/*" multiple style="font-size:11px; color:var(--text);">
               <label>Sound name <span style="font-size:10px;color:#666">(for playSound &amp; CfgSounds)</span></label>
@@ -1924,11 +2011,20 @@
     }
 
     function setSubtitleMode(mode) {
-      const isManual = mode === 'manual';
-      document.getElementById('modeManualBtn').classList.toggle('active', isManual);
-      document.getElementById('modeTranscribeBtn').classList.toggle('active', !isManual);
-      document.getElementById('modeManualPane').classList.toggle('active', isManual);
-      document.getElementById('modeTranscribePane').classList.toggle('active', !isManual);
+      const picker = document.getElementById('modePickerPane');
+      const manualPane = document.getElementById('modeManualPane');
+      const transcribePane = document.getElementById('modeTranscribePane');
+      // sync speaker inputs before switching
+      const manualSpeaker = document.getElementById('previewTitle');
+      const transcribeSpeaker = document.getElementById('transcribeSpeaker');
+      if (mode === 'transcribe' && manualSpeaker.value) transcribeSpeaker.value = manualSpeaker.value;
+      if (mode === 'manual' && transcribeSpeaker.value) manualSpeaker.value = transcribeSpeaker.value;
+      picker.style.display = mode ? 'none' : '';
+      manualPane.classList.toggle('active', mode === 'manual');
+      transcribePane.classList.toggle('active', mode === 'transcribe');
+      // keep both toggles in sync
+      ['modeManualBtn','modeManualBtn2'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.toggle('active', mode === 'manual'); });
+      ['modeTranscribeBtn','modeTranscribeBtn2'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.toggle('active', mode === 'transcribe'); });
     }
 
     function toggleAdvanced(el) {
@@ -2628,7 +2724,7 @@
       const text = $('transcriptText').value.trim();
       if (!text) { toast('Paste a transcript first'); return; }
 
-      const title = $('previewTitle').value || 'Title';
+      const title = $('transcribeSpeaker').value.trim() || $('previewTitle').value.trim() || 'Title';
       const maxChars = parseInt($('maxCharsPerEntry').value) || 70;
       const targetCPS = parseInt($('targetCPS').value) || 15;
       const totalDuration = getAudioDuration();
@@ -2846,7 +2942,7 @@
         const baseSettings = isBatch ? captureSnapshot('', null) : null;
         const maxChars = parseInt($('maxCharsPerEntry').value) || 70;
         const targetCPS = parseInt($('targetCPS').value) || 15;
-        const title = $('previewTitle').value || 'Title';
+        const title = $('transcribeSpeaker').value.trim() || $('previewTitle').value.trim() || 'Title';
         let transcribedCount = 0;
 
         // Step 3+: Process each file
