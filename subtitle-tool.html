@@ -392,27 +392,6 @@
       }
     }
 
-    /* Side-title style (right-aligned, typewriter) */
-    .subtitle-display.side-title {
-      text-align: right;
-      width: 60%;
-    }
-
-    .subtitle-display.side-title .subtitle-title {
-      font-weight: 700;
-      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.9);
-    }
-
-    .subtitle-display.side-title .subtitle-text {
-      font-size: 1.5em;
-      overflow: hidden;
-      white-space: nowrap;
-      border-right: 2px solid rgba(255, 255, 255, 0.6);
-      animation: typing 2s steps(40, end), blink-caret 0.5s step-end infinite;
-      display: inline-block;
-      max-width: 100%;
-    }
-
     @keyframes typing {
       from {
         width: 0;
@@ -1236,7 +1215,6 @@
               <label>Output Format</label>
               <select id="outputFormat" onchange="updatePreviewStyle()">
                 <option value="subtitle">fn_createSubtitle</option>
-                <option value="sideTitle">fn_createSideTitle</option>
               </select>
 
               <div class="row-tight" style="margin-top:6px;">
@@ -1839,9 +1817,6 @@
       titleEl.style.fontWeight = isBold ? '700' : isLight ? '300' : '600';
       textEl.style.fontWeight = isBold ? '700' : isLight ? '300' : '600';
 
-      const isSide = $('outputFormat').value === 'sideTitle';
-      display.classList.toggle('side-title', isSide);
-
       // Apply preset CSS class
       const presetKey = $('stylePreset').value;
       const newClass = STYLE_PRESETS[presetKey]?.cssClass || '';
@@ -1943,9 +1918,6 @@
       const webFont = ARMA_FONT_MAP[font] || "'Segoe UI', sans-serif";
       titleEl.style.fontFamily = webFont;
       textEl.style.fontFamily = webFont;
-
-      const isSide = format === 'sideTitle';
-      display.classList.toggle('side-title', isSide);
 
       const sameSpeaker = (title === currentDisplayedTitle) && display.classList.contains('visible');
 
@@ -2634,11 +2606,7 @@
           code += '"' + escapeSQF(soundClass) + '" remoteExec ["playSound", 0];\n\n';
         }
 
-        if (format === 'subtitle') {
-          code += formatSubtitleCall(strip ? processText(title) : title, strip ? processText(subtitle) : subtitle, dur, tc, sc, ts, ss, font, true, sqfMode, pos, getActiveLayout(), getActiveTitleTransform()) + '\n';
-        } else {
-          code += formatSideTitleCall(strip ? processText(title) : title, strip ? processText(subtitle) : subtitle, tc) + '\n';
-        }
+        code += formatSubtitleCall(strip ? processText(title) : title, strip ? processText(subtitle) : subtitle, dur, tc, sc, ts, ss, font, true, sqfMode, pos, getActiveLayout(), getActiveTitleTransform()) + '\n';
 
         output.textContent = code;
       } else {
@@ -2813,17 +2781,12 @@
             const entryTitle = strip ? processText(entry.title) : entry.title;
             const entrySub = strip ? processText(entry.subtitle) : entry.subtitle;
 
-            if (format === 'subtitle') {
-              const nextEntry = sorted[idx + 1];
-              const sameSpeakerNext = nextEntry && nextEntry.title === entry.title;
-              const fadeOut = !sameSpeakerNext;
+            const nextEntry = sorted[idx + 1];
+            const sameSpeakerNext = nextEntry && nextEntry.title === entry.title;
+            const fadeOut = !sameSpeakerNext;
 
-              code += '  ' + formatSubtitleCall(entryTitle, entrySub, entry.duration, tc, sc, ts, ss, font, fadeOut, sqfMode, pos, getActiveLayout(), getActiveTitleTransform()) + '\n';
-              code += '  sleep ' + round2(entry.duration) + ';\n';
-            } else {
-              code += '  ' + formatSideTitleCall(entryTitle, entrySub, tc) + '\n';
-              code += '  sleep ' + round2(entry.duration) + ';\n';
-            }
+            code += '  ' + formatSubtitleCall(entryTitle, entrySub, entry.duration, tc, sc, ts, ss, font, fadeOut, sqfMode, pos, getActiveLayout(), getActiveTitleTransform()) + '\n';
+            code += '  sleep ' + round2(entry.duration) + ';\n';
 
             prevEnd = entry.start + entry.duration;
           });
@@ -3022,10 +2985,6 @@
 
       params += ']';
       return params + ' remoteExec ["SB_fnc_createSubtitle", 0];';
-    }
-
-    function formatSideTitleCall(title, subtitle, color) {
-      return '["' + escapeSQF(title) + '", "' + escapeSQF(subtitle) + '", "' + color + '"] remoteExec ["SB_fnc_createSideTitle", 0];';
     }
 
     function escapeSQF(s) {
