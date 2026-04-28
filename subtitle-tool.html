@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -233,6 +233,101 @@
       margin-top: 8px;
       flex-wrap: wrap;
     }
+
+    /* ── Mode Toggle ── */
+    .mode-toggle {
+      display: flex;
+      border: 1px solid var(--panel-border);
+      border-radius: 5px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+
+    .mode-toggle button {
+      flex: 1;
+      padding: 5px 8px;
+      background: transparent;
+      border: none;
+      color: #666;
+      font-size: 11px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .mode-toggle button:not(:last-child) {
+      border-right: 1px solid var(--panel-border);
+    }
+
+    .mode-toggle button.active {
+      background: var(--input-bg);
+      color: var(--text-bright);
+    }
+
+    .mode-pane { display: none; }
+    .mode-pane.active { display: block; }
+
+    /* ── Mode Picker ── */
+    .mode-picker {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin: 8px 0 12px;
+    }
+
+    .mode-picker-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      background: var(--input-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+      color: var(--text-bright);
+      font-size: 12px;
+      font-family: inherit;
+      cursor: pointer;
+      text-align: left;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .mode-picker-btn:hover {
+      border-color: var(--accent);
+      background: #1a2a3a;
+    }
+
+    .mode-picker-btn .mpb-icon {
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .mode-picker-btn .mpb-label {
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .mode-picker-btn .mpb-desc {
+      font-size: 10px;
+      color: #666;
+      margin-top: 1px;
+    }
+
+    .mode-back {
+      font-size: 11px;
+      color: #666;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0;
+      margin-bottom: 10px;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: color 0.15s;
+    }
+
+    .mode-back:hover { color: var(--text); }
 
     /* ── Preview Area ── */
     .preview-container {
@@ -819,8 +914,44 @@
       background: var(--panel);
       border: 1px solid var(--panel-border);
       border-radius: 4px;
-      max-height: 240px;
+      flex: 1;
+      min-height: 0;
       overflow-y: auto;
+    }
+
+    /* ── Tabs Area Resize Handle ── */
+    .tabs-resize-handle {
+      height: 12px;
+      width: 28px;
+      align-self: center;
+      margin-top: -6px;
+      margin-bottom: -6px;
+      flex-shrink: 0;
+      cursor: ns-resize;
+      user-select: none;
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .tabs-resize-handle::after {
+      content: '';
+      display: block;
+      width: 18px;
+      height: 1px;
+      border-radius: 1px;
+      background: #404040;
+      box-shadow: 0 -4px 0 #404040, 0 4px 0 #404040;
+      transition: background 0.15s, box-shadow 0.15s;
+    }
+
+    .tabs-resize-handle:hover::after,
+    .tabs-resize-handle.dragging::after {
+      background: var(--accent);
+      box-shadow: 0 -4px 0 var(--accent), 0 4px 0 var(--accent),
+                  0 0 6px var(--accent), 0 -4px 6px var(--accent), 0 4px 6px var(--accent);
     }
 
     .timeline-header {
@@ -972,7 +1103,11 @@
     }
 
     .tab-panel.active {
-      display: block;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
     }
 
     /* ── History Tab ── */
@@ -980,7 +1115,8 @@
       display: flex;
       flex-direction: column;
       gap: 6px;
-      max-height: 420px;
+      flex: 1;
+      min-height: 0;
       overflow-y: auto;
     }
 
@@ -1068,6 +1204,188 @@
       transform: translateY(0);
     }
 
+    /* ── Workflow Step Indicator ── */
+    .workflow-steps {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      margin-bottom: 14px;
+      padding: 8px 0 10px;
+      border-bottom: 1px solid var(--panel-border);
+    }
+
+    .workflow-step {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #555;
+      padding: 4px 10px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: color 0.15s, background 0.15s;
+      user-select: none;
+    }
+
+    .workflow-step:hover {
+      color: var(--text-bright);
+      background: rgba(255,255,255,0.06);
+    }
+
+    .workflow-step.active {
+      color: var(--accent);
+      background: rgba(51, 153, 255, 0.12);
+    }
+
+    .workflow-step.completed {
+      color: var(--ok, #4caf50);
+    }
+
+    .workflow-step.completed .workflow-step-num {
+      background: var(--ok, #4caf50);
+      border-color: var(--ok, #4caf50);
+      color: #000;
+    }
+
+    .workflow-step-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 1.5px solid currentColor;
+      font-size: 9px;
+      font-weight: 700;
+      flex-shrink: 0;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+
+    .workflow-arrow {
+      color: #333;
+      font-size: 9px;
+      margin: 0 2px;
+    }
+
+    /* ── Step Panels (wizard) ── */
+    .step-panel {
+      display: none;
+    }
+
+    .step-panel.active {
+      display: block;
+    }
+
+    .step-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin: 12px 0 4px;
+      padding-top: 10px;
+      border-top: 1px solid var(--panel-border);
+    }
+
+    /* ── Primary Button ── */
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #000;
+      font-weight: 700;
+      padding: 8px 18px;
+    }
+
+    .btn-primary:hover {
+      background: #55aaff;
+      border-color: #55aaff;
+    }
+
+    /* ── Field Hints ── */
+    .field-hint {
+      font-size: 10px;
+      color: #555;
+      margin-top: 3px;
+      line-height: 1.4;
+    }
+
+    /* ── Section Icons ── */
+    .section-icon {
+      margin-right: 5px;
+      font-style: normal;
+    }
+
+    /* ── Timeline Empty State ── */
+    .timeline-empty {
+      text-align: center;
+      padding: 20px 12px;
+      color: #555;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .timeline-empty strong {
+      display: block;
+      color: #666;
+      margin-bottom: 4px;
+    }
+
+    /* ── Code Output Header ── */
+    .code-output-wrap {
+      border: 1px solid var(--panel-border);
+      border-radius: 4px;
+      overflow: hidden;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .code-output-header {
+      background: #161616;
+      border-bottom: 1px solid var(--panel-border);
+      padding: 5px 10px;
+      font-size: 10px;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .code-output-wrap .code-output {
+      border: none;
+      border-radius: 0;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    /* ── Tabs Wrapper ── */
+    .tabs-wrapper {
+      display: flex;
+      flex-direction: column;
+      height: 380px;
+      min-height: 150px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── Tab refinements ── */
+    .tab-btn.active {
+      border-bottom: 2px solid var(--accent) !important;
+      margin-bottom: -2px;
+      color: var(--accent);
+    }
+
+    .tab-bar {
+      border-bottom: 2px solid var(--panel-border);
+    }
+
     /* ── Scrollbar ── */
     ::-webkit-scrollbar {
       width: 6px;
@@ -1121,9 +1439,27 @@
           <div style="font-size:10px; color:#555; margin-top:2px;">Preview &bull; Pace &bull; Generate</div>
         </div>
 
+        <!-- Workflow Steps -->
+        <div class="workflow-steps">
+          <div class="workflow-step active" data-step="1" onclick="goToStep(1)">
+            <span class="workflow-step-num">1</span> Style
+          </div>
+          <span class="workflow-arrow">›</span>
+          <div class="workflow-step" data-step="2" onclick="goToStep(2)">
+            <span class="workflow-step-num">2</span> Subtitle
+          </div>
+          <span class="workflow-arrow">›</span>
+          <div class="workflow-step" data-step="3" onclick="goToStep(3)">
+            <span class="workflow-step-num">3</span> Generate
+          </div>
+        </div>
+
+        <!-- ── STEP 1 PANEL ── -->
+        <div class="step-panel active" data-step="1">
+
         <!-- ── STYLE ── -->
         <div class="section">
-          <div class="section-title" onclick="toggleSection(this)">Style <span class="caret">▼</span></div>
+          <div class="section-title" onclick="toggleSection(this)"><span>① &nbsp;Style</span> <span class="caret">▼</span></div>
           <div class="section-body">
             <label>Preset</label>
             <div class="preset-row">
@@ -1182,7 +1518,7 @@
             </select>
 
             <div class="advanced-toggle" onclick="toggleAdvanced(this)">
-              <span class="adv-arrow">&#9654;</span> Advanced
+              <span class="adv-arrow">&#9654;</span> Fine-tune
             </div>
             <div class="advanced-body">
               <label>Font</label>
@@ -1207,15 +1543,10 @@
                   <input type="range" id="titleSize" min="0.5" max="4" step="0.1" value="1.3">
                 </div>
                 <div>
-                  <label>Sub Size: <span id="subtitleSizeVal">1.1</span></label>
+                  <label>Subtitle Size: <span id="subtitleSizeVal">1.1</span></label>
                   <input type="range" id="subtitleSize" min="0.5" max="4" step="0.1" value="1.1">
                 </div>
               </div>
-
-              <label>Output Format</label>
-              <select id="outputFormat" onchange="updatePreviewStyle()">
-                <option value="subtitle">fn_createSubtitle</option>
-              </select>
 
               <div class="row-tight" style="margin-top:6px;">
                 <input type="checkbox" id="showArmaUI" checked onchange="toggleArmaUI()">
@@ -1223,80 +1554,154 @@
               </div>
               <div class="row-tight" style="margin-top:4px;">
                 <input type="checkbox" id="stripPunctuation" onchange="updatePreviewText()">
-                <label style="margin:0; cursor:pointer;" for="stripPunctuation">Strip punctuation</label>
+                <label style="margin:0; cursor:pointer;" for="stripPunctuation">Strip punctuation from output</label>
               </div>
+              <input type="hidden" id="outputFormat" value="subtitle">
             </div>
           </div>
         </div>
 
-        <!-- ── SUBTITLE & AUDIO ── -->
+        <div class="step-nav">
+          <span></span>
+          <button class="btn btn-primary" onclick="goToStep(2)">Subtitle &rarr;</button>
+        </div>
+
+        </div><!-- /step-panel 1 -->
+
+        <!-- ── STEP 2 PANEL ── -->
+        <div class="step-panel" data-step="2">
+
+        <!-- ── SUBTITLE ── -->
         <div class="section">
-          <div class="section-title" onclick="toggleSection(this)">Subtitle &amp; Audio <span class="caret">▼</span></div>
+          <div class="section-title" onclick="toggleSection(this)"><span>② &nbsp;Subtitle</span> <span class="caret">▼</span></div>
           <div class="section-body">
-            <label>Title Text</label>
-            <input type="text" id="previewTitle" value="Incoming Transmission" placeholder="Speaker / title...">
-            <label>Subtitle Text <span id="charCounter" style="float:right; font-size:0.85em; color:#888;">46 / 80</span></label>
-            <input type="text" id="previewSubtitle" maxlength="80"
-              placeholder="Subtitle text..." value="Enemy activity detected west of the village">
-            <div id="durationRow" style="display:none;">
-              <label>Duration (sec)</label>
-              <input type="number" id="previewDuration" value="5" min="0.5" step="0.5" style="width:80px;">
-            </div>
-            <div class="btn-group">
-              <button class="btn btn-accent" onclick="previewSingle()">&#9654; Preview</button>
-              <button class="btn" id="fadeToggleBtn" onclick="toggleFade()">Fade Out</button>
-              <button class="btn" onclick="quickCopySQF()">&#128203; Copy SQF</button>
+
+            <!-- Picker -->
+            <div id="modePickerPane">
+              <div class="mode-picker">
+                <button class="mode-picker-btn" onclick="setSubtitleMode('manual')">
+                  <span class="mpb-icon">&#9998;</span>
+                  <div>
+                    <div class="mpb-label">Manual</div>
+                    <div class="mpb-desc">Type speaker and subtitle text directly</div>
+                  </div>
+                </button>
+                <button class="mode-picker-btn" onclick="setSubtitleMode('transcribe')">
+                  <span class="mpb-icon">&#127908;</span>
+                  <div>
+                    <div class="mpb-label">Transcribed</div>
+                    <div class="mpb-desc">Load audio and auto-generate subtitle lines</div>
+                  </div>
+                </button>
+              </div>
             </div>
 
-            <hr style="border:none; border-top:1px solid var(--panel-border); margin:10px 0;">
-
-            <label>Audio File</label>
-            <input type="file" id="audioFile" accept="audio/*" multiple style="font-size:11px; color:var(--text);">
-            <label>Sound Class Name <span style="font-size:10px;color:#666">(for playSound &amp; CfgSounds)</span></label>
-            <input type="text" id="soundClassName" placeholder="e.g. radio_transmission_01" style="font-size:12px;">
-            <div class="row" style="margin-top:4px;">
-              <div>
+            <!-- Manual pane -->
+            <div class="mode-pane" id="modeManualPane">
+              <div class="mode-toggle" style="margin-bottom:10px;">
+                <button class="active" id="modeManualBtn" onclick="setSubtitleMode('manual')">&#9998; Manual</button>
+                <button id="modeTranscribeBtn" onclick="setSubtitleMode('transcribe')">&#127908; Transcribed</button>
+              </div>
+              <label>Speaker / Title</label>
+              <input type="text" id="previewTitle" value="Incoming Transmission" placeholder="e.g. HQ, CORTANA, Narrator...">
+              <label>Subtitle Text <span id="charCounter" style="float:right; font-size:0.85em; color:#888;">46 / 80</span></label>
+              <input type="text" id="previewSubtitle" maxlength="80"
+                placeholder="What they say..." value="Enemy activity detected west of the village">
+              <div id="durationRow" style="display:none;">
                 <label>Duration (sec)</label>
-                <input type="number" id="manualDuration" min="1" step="1" placeholder="auto">
+                <input type="number" id="previewDuration" value="5" min="0.5" step="0.5" style="width:80px;">
               </div>
-              <div>
-                <label>Detected</label>
-                <div id="detectedDuration" style="padding:5px 0; font-size:13px; color:var(--text);">—</div>
+              <div class="btn-group" style="margin-top:10px;">
+                <button class="btn btn-primary" onclick="previewSingle()">&#9654; Preview</button>
+                <button class="btn" id="fadeToggleBtn" onclick="toggleFade()">Fade Out</button>
+                <button class="btn" onclick="quickCopySQF()">&#128203; Copy SQF</button>
               </div>
             </div>
 
-            <label>Paste full transcript</label>
-            <textarea id="transcriptText" rows="3"
-              placeholder="Paste dialogue here. Auto-split will chunk it into timed subtitle entries..."></textarea>
-            <div class="row" style="margin-top:4px;">
-              <div>
-                <label>Max chars</label>
-                <input type="number" id="maxCharsPerEntry" value="70" min="20" max="200" style="width:65px;">
+            <!-- Transcribed pane -->
+            <div class="mode-pane" id="modeTranscribePane">
+              <div class="mode-toggle" style="margin-bottom:10px;">
+                <button id="modeManualBtn2" onclick="setSubtitleMode('manual')">&#9998; Manual</button>
+                <button class="active" id="modeTranscribeBtn2" onclick="setSubtitleMode('transcribe')">&#127908; Transcribed</button>
               </div>
-              <div>
-                <label>Target c/s</label>
-                <input type="number" id="targetCPS" value="15" min="5" max="30" style="width:65px;">
-              </div>
-            </div>
-            <div class="btn-group">
-              <button class="btn btn-accent" onclick="autoSplitTranscript()">Auto-Split &amp; Pace</button>
-              <button class="btn" id="transcribeBtn" onclick="transcribeAudio()"
-                title="AI transcription of loaded audio (requires internet on first use)">&#127908; Transcribe</button>
-            </div>
-            <div id="transcribeStatus" style="font-size:10px; color:#666; margin-top:4px;"></div>
-            <div id="transcribeProgress" style="display:none; margin-top:4px;">
-              <div style="background:#333; border-radius:3px; height:5px; overflow:hidden;">
-                <div id="transcribeBar" style="background:var(--accent); height:100%; width:0%; transition:width 0.3s;">
+              <label>Speaker / Title</label>
+              <input type="text" id="transcribeSpeaker" placeholder="e.g. HQ, CORTANA, Narrator...">
+              <label>Audio File</label>
+              <input type="file" id="audioFile" accept="audio/*" multiple style="font-size:11px; color:var(--text);">
+              <label>Sound name <span style="font-size:10px;color:#666">(for playSound &amp; CfgSounds)</span></label>
+              <input type="text" id="soundClassName" placeholder="e.g. radio_transmission_01" style="font-size:12px;">
+              <p class="field-hint">Must match a class defined in your mission's description.ext</p>
+              <div class="row" style="margin-top:4px;">
+                <div>
+                  <label>Duration (sec)</label>
+                  <input type="number" id="manualDuration" min="1" step="1" placeholder="auto">
+                </div>
+                <div>
+                  <label>Detected</label>
+                  <div id="detectedDuration" style="padding:5px 0; font-size:13px; color:var(--text);">—</div>
                 </div>
               </div>
-              <div id="transcribeProgressText" style="font-size:10px; color:#888; margin-top:2px;"></div>
+              <label style="margin-top:10px;">Paste transcript</label>
+              <textarea id="transcriptText" rows="3" class="transcript-area"
+                placeholder="Paste the full script here, then click Auto-Split to turn it into timeline lines."></textarea>
+              <p class="field-hint">Auto-Split chunks the text into timed subtitle lines based on reading speed.</p>
+              <div class="row" style="margin-top:6px;">
+                <div>
+                  <label>Max characters per line</label>
+                  <input type="number" id="maxCharsPerEntry" value="70" min="20" max="200" style="width:65px;">
+                </div>
+                <div>
+                  <label>Reading speed (chars/sec)</label>
+                  <input type="number" id="targetCPS" value="15" min="5" max="30" style="width:65px;">
+                </div>
+              </div>
+              <div class="btn-group">
+                <button class="btn btn-accent" onclick="autoSplitTranscript()">Auto-Split &amp; Pace</button>
+                <button class="btn" id="transcribeBtn" onclick="transcribeAudio()"
+                  title="AI transcription of loaded audio (requires internet on first use)">&#127908; Transcribe</button>
+              </div>
+              <div id="transcribeStatus" style="font-size:10px; color:#666; margin-top:4px;"></div>
+              <div id="transcribeProgress" style="display:none; margin-top:4px;">
+                <div style="background:#333; border-radius:3px; height:5px; overflow:hidden;">
+                  <div id="transcribeBar" style="background:var(--accent); height:100%; width:0%; transition:width 0.3s;"></div>
+                </div>
+                <div id="transcribeProgressText" style="font-size:10px; color:#888; margin-top:2px;"></div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="step-nav">
+          <button class="btn" onclick="goToStep(1)">&larr; Style</button>
+          <button class="btn btn-primary" onclick="goToStep(3)">Generate &rarr;</button>
+        </div>
+
+        </div><!-- /step-panel 2 -->
+
+        <!-- ── STEP 3 PANEL ── -->
+        <div class="step-panel" data-step="3">
+
+        <!-- ── GENERATE ── -->
+        <div class="section">
+          <div class="section-title" onclick="toggleSection(this)"><span>&#9889; &nbsp;Generate SQF</span> <span class="caret">&#9660;</span></div>
+          <div class="section-body">
+            <label>Output Mode</label>
+            <select id="sqfMode2" style="width:100%; font-size:11px; padding:3px 6px;" onchange="document.getElementById('sqfMode').value=this.value; generateSQF();">
+              <option value="function">Use Function &mdash; remoteExec (recommended)</option>
+              <option value="inline">Standalone Block &mdash; inline cutText spawn</option>
+            </select>
+            <p class="field-hint" style="margin-top:4px;"><b>Use Function</b> requires fn_createSubtitle.sqf in your mission. <b>Standalone Block</b> works without it.</p>
+            <div class="btn-group" style="margin-top:10px;">
+              <button class="btn btn-primary" onclick="generateSQF(); switchTab('code');">&#9889; Generate SQF</button>
+              <button class="btn" onclick="switchTab('timeline')">&#128202; View Timeline</button>
             </div>
           </div>
         </div>
 
         <!-- ── PROJECT ── -->
         <div class="section">
-          <div class="section-title" onclick="toggleSection(this)">Project <span class="caret">▼</span></div>
+          <div class="section-title" onclick="toggleSection(this)"><span>💾 &nbsp;Project</span> <span class="caret">▼</span></div>
           <div class="section-body">
             <div class="btn-group">
               <button class="btn" onclick="saveProject()">&#128190; Save</button>
@@ -1306,6 +1711,12 @@
             <div id="saveStatus" style="font-size:10px; color:#555; margin-top:4px;"></div>
           </div>
         </div>
+
+        <div class="step-nav">
+          <button class="btn" onclick="goToStep(2)">&larr; Subtitle</button>
+        </div>
+
+        </div><!-- /step-panel 3 -->
 
       </div>
     </div>
@@ -1393,21 +1804,22 @@
         </div>
       </div>
 
-      <!-- Audio Bar -->
-      <div class="audio-bar" id="audioBar" style="display:none;">
-        <button class="btn btn-small btn-accent" id="playAllBtn" onclick="playTimeline()">&#9654; Play All</button>
-        <button class="btn btn-small" id="stopBtn" onclick="stopTimeline()">&#9632; Stop</button>
-        <audio id="audioPlayer" controls></audio>
-        <span class="time-display" id="timeDisplay">0:00 / 0:00</span>
-      </div>
-
       <!-- Tabs: Timeline / Code -->
-      <div style="flex:0 0 auto;">
+      <div class="tabs-wrapper" id="tabsWrapper">
+        <div class="tabs-resize-handle" id="tabsResizeHandle"></div>
         <div class="tab-bar">
           <button class="tab-btn active" onclick="switchTab('timeline')">Timeline</button>
-          <button class="tab-btn" onclick="switchTab('code')">Generated SQF</button>
-          <button class="tab-btn" onclick="switchTab('cfgsounds')">CfgSounds</button>
+          <button class="tab-btn" onclick="switchTab('code')">Code Output</button>
+          <button class="tab-btn" onclick="switchTab('cfgsounds')">Sound Config</button>
           <button class="tab-btn" onclick="switchTab('history')">History</button>
+        </div>
+
+        <!-- Audio Bar -->
+        <div class="audio-bar" id="audioBar" style="display:none;">
+          <button class="btn btn-small btn-accent" id="playAllBtn" onclick="playTimeline()">&#9654; Play All</button>
+          <button class="btn btn-small" id="stopBtn" onclick="stopTimeline()">&#9632; Stop</button>
+          <audio id="audioPlayer" controls></audio>
+          <span class="time-display" id="timeDisplay">0:00 / 0:00</span>
         </div>
 
         <!-- Timeline Panel -->
@@ -1422,11 +1834,11 @@
               <span>Speed</span>
               <span></span>
             </div>
-            <div id="timelineEntries"></div>
+            <div id="timelineEntries"><div class="timeline-empty"><strong>No subtitle lines yet</strong>Add lines manually with “+ Add Line”, or paste a script above and use Auto-Split.</div></div>
           </div>
-          <div class="btn-group" style="margin-top:6px;">
-            <button class="btn btn-accent" onclick="addTimelineEntry()">+ Add Entry</button>
-            <button class="btn" onclick="generateSQF()">Generate SQF</button>
+          <div class="btn-group" style="margin-top:6px; flex-shrink:0;">
+            <button class="btn btn-accent" onclick="addTimelineEntry()">+ Add Line</button>
+            <button class="btn btn-primary" onclick="generateSQF()">&#9889; Generate SQF</button>
             <button class="btn" onclick="generateSQF(); copyCode();">&#128203; Copy SQF</button>
           </div>
         </div>
@@ -1438,27 +1850,37 @@
               <label style="margin:0; font-size:11px;">SQF Mode</label>
             </div>
             <select id="sqfMode" style="width:auto; font-size:11px; padding:3px 6px;" onchange="generateSQF()">
-              <option value="function">Function Call (remoteExec)</option>
-              <option value="inline">Inline Spawn (cutText)</option>
+              <option value="function">Use Function — remoteExec (recommended)</option>
+              <option value="inline">Standalone Block — inline cutText spawn</option>
             </select>
+            <p class="field-hint" style="margin-top:4px;"><b>Use Function</b> requires fn_createSubtitle.sqf in your mission. <b>Standalone Block</b> works without it.</p>
             <div class="row-tight" style="flex:0 0 auto;">
               <input type="checkbox" id="includePlaySound" onchange="generateSQF()">
               <label style="margin:0; font-size:11px; cursor:pointer;" for="includePlaySound">Include playSound</label>
             </div>
           </div>
-          <div class="code-output visible" id="codeOutput">// Click "Generate SQF" to create code from your timeline
-            entries.</div>
-          <div class="btn-group" style="margin-top:6px;">
-            <button class="btn btn-accent" onclick="copyCode()">&#128203; Copy to Clipboard</button>
+          <div class="code-output-wrap">
+            <div class="code-output-header">
+              <span>Generated SQF code</span>
+            </div>
+            <div class="code-output visible" id="codeOutput">// Click “Generate SQF” to create code from your timeline entries.</div>
+          </div>
+          <div class="btn-group" style="margin-top:6px; flex-shrink:0;">
+            <button class="btn btn-primary" onclick="copyCode()">&#128203; Copy to Clipboard</button>
             <button class="btn" onclick="generateSQF()">&#8635; Regenerate</button>
           </div>
         </div>
 
         <!-- CfgSounds Panel -->
         <div class="tab-panel" id="tab-cfgsounds">
-          <div class="code-output visible" id="cfgSoundsOutput">// Add a sound class name and audio file to generate CfgSounds config.</div>
-          <div class="btn-group" style="margin-top:6px;">
-            <button class="btn btn-accent" onclick="copyCfgSounds()">&#128203; Copy to Clipboard</button>
+          <div class="code-output-wrap">
+            <div class="code-output-header">
+              <span>CfgSounds config block</span>
+            </div>
+            <div class="code-output visible" id="cfgSoundsOutput">// Add a sound name and audio file to generate a CfgSounds config block.</div>
+          </div>
+          <div class="btn-group" style="margin-top:6px; flex-shrink:0;">
+            <button class="btn btn-primary" onclick="copyCfgSounds()">&#128203; Copy to Clipboard</button>
             <button class="btn" onclick="generateCfgSounds()">&#8635; Generate</button>
           </div>
         </div>
@@ -1550,6 +1972,35 @@
     }
 
     // ═══════════════════════════════════════════════════════
+    //  WIZARD STEP NAVIGATION
+    // ═══════════════════════════════════════════════════════
+    let currentStep = 1;
+
+    function goToStep(n) {
+      currentStep = n;
+      // show/hide step panels
+      document.querySelectorAll('.step-panel').forEach(p => {
+        p.classList.toggle('active', +p.dataset.step === n);
+      });
+      // update pill states
+      document.querySelectorAll('.workflow-step[data-step]').forEach(s => {
+        const sn = +s.dataset.step;
+        s.classList.toggle('active', sn === n);
+        s.classList.toggle('completed', sn < n);
+        if (sn < n) {
+          s.querySelector('.workflow-step-num').textContent = '✓';
+        } else {
+          s.querySelector('.workflow-step-num').textContent = sn;
+        }
+      });
+      // sync the sqfMode2 selector with sqfMode on step 3
+      if (n === 3) {
+        const m2 = document.getElementById('sqfMode2');
+        if (m2) m2.value = document.getElementById('sqfMode').value;
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════
     //  COLLAPSIBLE SECTIONS
     // ═══════════════════════════════════════════════════════
     function toggleSection(titleEl) {
@@ -1559,12 +2010,60 @@
       caret.classList.toggle('collapsed');
     }
 
+    function setSubtitleMode(mode) {
+      const picker = document.getElementById('modePickerPane');
+      const manualPane = document.getElementById('modeManualPane');
+      const transcribePane = document.getElementById('modeTranscribePane');
+      // sync speaker inputs before switching
+      const manualSpeaker = document.getElementById('previewTitle');
+      const transcribeSpeaker = document.getElementById('transcribeSpeaker');
+      if (mode === 'transcribe' && manualSpeaker.value) transcribeSpeaker.value = manualSpeaker.value;
+      if (mode === 'manual' && transcribeSpeaker.value) manualSpeaker.value = transcribeSpeaker.value;
+      picker.style.display = mode ? 'none' : '';
+      manualPane.classList.toggle('active', mode === 'manual');
+      transcribePane.classList.toggle('active', mode === 'transcribe');
+      // keep both toggles in sync
+      ['modeManualBtn','modeManualBtn2'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.toggle('active', mode === 'manual'); });
+      ['modeTranscribeBtn','modeTranscribeBtn2'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.toggle('active', mode === 'transcribe'); });
+    }
+
     function toggleAdvanced(el) {
       const body = el.nextElementSibling;
       const arrow = el.querySelector('.adv-arrow');
       body.classList.toggle('open');
       arrow.classList.toggle('open');
     }
+
+    // ═══════════════════════════════════════════════════════
+    //  TABS AREA RESIZE
+    // ═══════════════════════════════════════════════════════
+    (function () {
+      const handle = document.getElementById('tabsResizeHandle');
+      const wrapper = document.getElementById('tabsWrapper');
+      let startY, startH;
+
+      handle.addEventListener('mousedown', function (e) {
+        startY = e.clientY;
+        startH = wrapper.offsetHeight;
+        handle.classList.add('dragging');
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+        e.preventDefault();
+      });
+
+      function onMove(e) {
+        const main = wrapper.parentElement;
+        const maxH = main.clientHeight - 32; // leave room for handle
+        const newH = Math.min(maxH, Math.max(150, startH - (e.clientY - startY)));
+        wrapper.style.height = newH + 'px';
+      }
+
+      function onUp() {
+        handle.classList.remove('dragging');
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      }
+    })();
 
     // ═══════════════════════════════════════════════════════
     //  PRESETS
@@ -2099,6 +2598,11 @@
       const container = $('timelineEntries');
       container.innerHTML = '';
 
+      if (timeline.length === 0) {
+        container.innerHTML = '<div class="timeline-empty"><strong>No subtitle lines yet</strong>Add lines manually with "+ Add Line", or paste a script in Audio &amp; Transcription and use Auto-Split.</div>';
+        return;
+      }
+
       timeline.forEach((entry, idx) => {
         const div = document.createElement('div');
         div.className = 'timeline-entry';
@@ -2220,7 +2724,7 @@
       const text = $('transcriptText').value.trim();
       if (!text) { toast('Paste a transcript first'); return; }
 
-      const title = $('previewTitle').value || 'Title';
+      const title = $('transcribeSpeaker').value.trim() || $('previewTitle').value.trim() || 'Title';
       const maxChars = parseInt($('maxCharsPerEntry').value) || 70;
       const targetCPS = parseInt($('targetCPS').value) || 15;
       const totalDuration = getAudioDuration();
@@ -2438,7 +2942,7 @@
         const baseSettings = isBatch ? captureSnapshot('', null) : null;
         const maxChars = parseInt($('maxCharsPerEntry').value) || 70;
         const targetCPS = parseInt($('targetCPS').value) || 15;
-        const title = $('previewTitle').value || 'Title';
+        const title = $('transcribeSpeaker').value.trim() || $('previewTitle').value.trim() || 'Title';
         let transcribedCount = 0;
 
         // Step 3+: Process each file
