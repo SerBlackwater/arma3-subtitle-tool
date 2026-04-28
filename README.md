@@ -20,22 +20,23 @@ A self-contained browser-based tool for designing, previewing, and generating mu
 ## Quick Start
 
 1. Open `subtitle-tool.html` in Chrome, Edge, or Firefox
-2. Pick a **Style Preset** (BLUFOR, COD, Halo, etc.) or configure your own colors/font
-3. Type a speaker name and subtitle text
+2. **Step 1 — Style:** Pick a preset (BLUFOR, COD, Halo, etc.) or configure your own colors and font
+3. **Step 2 — Subtitle:** Choose **Manual** to type speaker and text directly, or **Transcribed** to load audio and auto-generate lines
 4. Click **▶ Preview** to see it in the 16:9 frame
-5. Add entries to the **Timeline**, then click **Generate SQF**
-6. Copy the code into your mission
+5. **Step 3 — Generate:** Click **Generate SQF** and copy the output into your mission
 
 ---
 
 ## Features
 
-- **Live 16:9 Preview** — Arma HUD overlays (compass, GPS, squad bar)
+- **Wizard Sidebar** — guided three-step flow (Style → Subtitle → Generate)
+- **Live 16:9 Preview** — Arma HUD overlays (compass, GPS, squad bar); scales with window size
 - **Style Presets** — BLUFOR, OPFOR, INDFOR, Civilian, Unknown, COD Ally/Enemy, Wingman, Halo, Halo AI
 - **Custom Presets** — Save your own color/size/font combos
 - **Drag & Resize** — Position the subtitle anywhere on the preview frame
-- **Timeline Editor** — Visual per-entry editor with speed (CPS) indicators
-- **Audio Sync** — Load audio, auto-split transcripts with character-weighted timing
+- **Timeline Editor** — Visual per-entry editor with speed (CPS) indicators; resizable panel
+- **Manual Mode** — Type speaker and subtitle text directly with live preview
+- **Transcribed Mode** — Load audio, paste or transcribe a script, auto-split into timed entries
 - **AI Transcription** — In-browser Whisper transcription via Transformers.js (no server needed)
 - **Batch Transcription** — Select multiple audio files; all transcribed sequentially
 - **Generation History** — Last 15 generates / copies / transcriptions cached; click any entry to restore all settings instantly
@@ -204,3 +205,13 @@ This is a **beta release**. Please report bugs, unexpected SQF output, or layout
 ## License
 
 [MIT](LICENSE) — free to use, modify, and distribute.
+
+---
+
+## Attribution
+
+If you use this tool to build your own version or release a fork publicly, a credit in your code, readme, or release notes is appreciated:
+
+> Based on [Arma 3 Subtitle Tool](https://github.com/[your-repo]/arma3-subtitle-tool) by SerBlackwater
+
+Not required by the license — just appreciated!
