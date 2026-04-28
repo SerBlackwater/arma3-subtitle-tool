@@ -234,6 +234,39 @@
       flex-wrap: wrap;
     }
 
+    /* ── Mode Toggle ── */
+    .mode-toggle {
+      display: flex;
+      border: 1px solid var(--panel-border);
+      border-radius: 5px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+
+    .mode-toggle button {
+      flex: 1;
+      padding: 5px 8px;
+      background: transparent;
+      border: none;
+      color: #666;
+      font-size: 11px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .mode-toggle button:not(:last-child) {
+      border-right: 1px solid var(--panel-border);
+    }
+
+    .mode-toggle button.active {
+      background: var(--input-bg);
+      color: var(--text-bright);
+    }
+
+    .mode-pane { display: none; }
+    .mode-pane.active { display: block; }
+
     /* ── Preview Area ── */
     .preview-container {
       flex: 1;
@@ -1480,69 +1513,75 @@
         <div class="section">
           <div class="section-title" onclick="toggleSection(this)"><span>② &nbsp;Subtitle</span> <span class="caret">▼</span></div>
           <div class="section-body">
-            <label>Speaker / Title</label>
-            <input type="text" id="previewTitle" value="Incoming Transmission" placeholder="e.g. HQ, CORTANA, Narrator...">
-            <label>Subtitle Text <span id="charCounter" style="float:right; font-size:0.85em; color:#888;">46 / 80</span></label>
-            <input type="text" id="previewSubtitle" maxlength="80"
-              placeholder="What they say..." value="Enemy activity detected west of the village">
-            <div id="durationRow" style="display:none;">
-              <label>Duration (sec)</label>
-              <input type="number" id="previewDuration" value="5" min="0.5" step="0.5" style="width:80px;">
-            </div>
-            <div class="btn-group" style="margin-top:10px;">
-              <button class="btn btn-primary" onclick="previewSingle()">&#9654; Preview</button>
-              <button class="btn" id="fadeToggleBtn" onclick="toggleFade()">Fade Out</button>
-              <button class="btn" onclick="quickCopySQF()">&#128203; Copy SQF</button>
-            </div>
-          </div>
-        </div>
 
-        <!-- ── AUDIO & TRANSCRIPTION ── -->
-        <div class="section">
-          <div class="section-title" onclick="toggleSection(this)"><span>🎙 &nbsp;Audio &amp; Transcription</span> <span class="caret">▼</span></div>
-          <div class="section-body collapsed">
-            <label>Audio File</label>
-            <input type="file" id="audioFile" accept="audio/*" multiple style="font-size:11px; color:var(--text);">
-            <label>Sound name <span style="font-size:10px;color:#666">(for playSound &amp; CfgSounds)</span></label>
-            <input type="text" id="soundClassName" placeholder="e.g. radio_transmission_01" style="font-size:12px;">
-            <p class="field-hint">Must match a class defined in your mission's description.ext</p>
-            <div class="row" style="margin-top:4px;">
-              <div>
+            <div class="mode-toggle">
+              <button class="active" id="modeManualBtn" onclick="setSubtitleMode('manual')">Manual</button>
+              <button id="modeTranscribeBtn" onclick="setSubtitleMode('transcribe')">Transcribed</button>
+            </div>
+
+            <!-- Manual pane -->
+            <div class="mode-pane active" id="modeManualPane">
+              <label>Speaker / Title</label>
+              <input type="text" id="previewTitle" value="Incoming Transmission" placeholder="e.g. HQ, CORTANA, Narrator...">
+              <label>Subtitle Text <span id="charCounter" style="float:right; font-size:0.85em; color:#888;">46 / 80</span></label>
+              <input type="text" id="previewSubtitle" maxlength="80"
+                placeholder="What they say..." value="Enemy activity detected west of the village">
+              <div id="durationRow" style="display:none;">
                 <label>Duration (sec)</label>
-                <input type="number" id="manualDuration" min="1" step="1" placeholder="auto">
+                <input type="number" id="previewDuration" value="5" min="0.5" step="0.5" style="width:80px;">
               </div>
-              <div>
-                <label>Detected</label>
-                <div id="detectedDuration" style="padding:5px 0; font-size:13px; color:var(--text);">—</div>
+              <div class="btn-group" style="margin-top:10px;">
+                <button class="btn btn-primary" onclick="previewSingle()">&#9654; Preview</button>
+                <button class="btn" id="fadeToggleBtn" onclick="toggleFade()">Fade Out</button>
+                <button class="btn" onclick="quickCopySQF()">&#128203; Copy SQF</button>
               </div>
             </div>
 
-            <label style="margin-top:10px;">Paste transcript</label>
-            <textarea id="transcriptText" rows="3" class="transcript-area"
-              placeholder="Paste the full script here, then click Auto-Split to turn it into timeline lines."></textarea>
-            <p class="field-hint">Auto-Split chunks the text into timed subtitle lines based on reading speed.</p>
-            <div class="row" style="margin-top:6px;">
-              <div>
-                <label>Max characters per line</label>
-                <input type="number" id="maxCharsPerEntry" value="70" min="20" max="200" style="width:65px;">
+            <!-- Transcribed pane -->
+            <div class="mode-pane" id="modeTranscribePane">
+              <label>Audio File</label>
+              <input type="file" id="audioFile" accept="audio/*" multiple style="font-size:11px; color:var(--text);">
+              <label>Sound name <span style="font-size:10px;color:#666">(for playSound &amp; CfgSounds)</span></label>
+              <input type="text" id="soundClassName" placeholder="e.g. radio_transmission_01" style="font-size:12px;">
+              <p class="field-hint">Must match a class defined in your mission's description.ext</p>
+              <div class="row" style="margin-top:4px;">
+                <div>
+                  <label>Duration (sec)</label>
+                  <input type="number" id="manualDuration" min="1" step="1" placeholder="auto">
+                </div>
+                <div>
+                  <label>Detected</label>
+                  <div id="detectedDuration" style="padding:5px 0; font-size:13px; color:var(--text);">—</div>
+                </div>
               </div>
-              <div>
-                <label>Reading speed (chars/sec)</label>
-                <input type="number" id="targetCPS" value="15" min="5" max="30" style="width:65px;">
+              <label style="margin-top:10px;">Paste transcript</label>
+              <textarea id="transcriptText" rows="3" class="transcript-area"
+                placeholder="Paste the full script here, then click Auto-Split to turn it into timeline lines."></textarea>
+              <p class="field-hint">Auto-Split chunks the text into timed subtitle lines based on reading speed.</p>
+              <div class="row" style="margin-top:6px;">
+                <div>
+                  <label>Max characters per line</label>
+                  <input type="number" id="maxCharsPerEntry" value="70" min="20" max="200" style="width:65px;">
+                </div>
+                <div>
+                  <label>Reading speed (chars/sec)</label>
+                  <input type="number" id="targetCPS" value="15" min="5" max="30" style="width:65px;">
+                </div>
+              </div>
+              <div class="btn-group">
+                <button class="btn btn-accent" onclick="autoSplitTranscript()">Auto-Split &amp; Pace</button>
+                <button class="btn" id="transcribeBtn" onclick="transcribeAudio()"
+                  title="AI transcription of loaded audio (requires internet on first use)">&#127908; Transcribe</button>
+              </div>
+              <div id="transcribeStatus" style="font-size:10px; color:#666; margin-top:4px;"></div>
+              <div id="transcribeProgress" style="display:none; margin-top:4px;">
+                <div style="background:#333; border-radius:3px; height:5px; overflow:hidden;">
+                  <div id="transcribeBar" style="background:var(--accent); height:100%; width:0%; transition:width 0.3s;"></div>
+                </div>
+                <div id="transcribeProgressText" style="font-size:10px; color:#888; margin-top:2px;"></div>
               </div>
             </div>
-            <div class="btn-group">
-              <button class="btn btn-accent" onclick="autoSplitTranscript()">Auto-Split &amp; Pace</button>
-              <button class="btn" id="transcribeBtn" onclick="transcribeAudio()"
-                title="AI transcription of loaded audio (requires internet on first use)">&#127908; Transcribe</button>
-            </div>
-            <div id="transcribeStatus" style="font-size:10px; color:#666; margin-top:4px;"></div>
-            <div id="transcribeProgress" style="display:none; margin-top:4px;">
-              <div style="background:#333; border-radius:3px; height:5px; overflow:hidden;">
-                <div id="transcribeBar" style="background:var(--accent); height:100%; width:0%; transition:width 0.3s;"></div>
-              </div>
-              <div id="transcribeProgressText" style="font-size:10px; color:#888; margin-top:2px;"></div>
-            </div>
+
           </div>
         </div>
 
@@ -1678,14 +1717,6 @@
         </div>
       </div>
 
-      <!-- Audio Bar -->
-      <div class="audio-bar" id="audioBar" style="display:none;">
-        <button class="btn btn-small btn-accent" id="playAllBtn" onclick="playTimeline()">&#9654; Play All</button>
-        <button class="btn btn-small" id="stopBtn" onclick="stopTimeline()">&#9632; Stop</button>
-        <audio id="audioPlayer" controls></audio>
-        <span class="time-display" id="timeDisplay">0:00 / 0:00</span>
-      </div>
-
       <!-- Tabs: Timeline / Code -->
       <div class="tabs-wrapper" id="tabsWrapper">
         <div class="tabs-resize-handle" id="tabsResizeHandle"></div>
@@ -1694,6 +1725,14 @@
           <button class="tab-btn" onclick="switchTab('code')">Code Output</button>
           <button class="tab-btn" onclick="switchTab('cfgsounds')">Sound Config</button>
           <button class="tab-btn" onclick="switchTab('history')">History</button>
+        </div>
+
+        <!-- Audio Bar -->
+        <div class="audio-bar" id="audioBar" style="display:none;">
+          <button class="btn btn-small btn-accent" id="playAllBtn" onclick="playTimeline()">&#9654; Play All</button>
+          <button class="btn btn-small" id="stopBtn" onclick="stopTimeline()">&#9632; Stop</button>
+          <audio id="audioPlayer" controls></audio>
+          <span class="time-display" id="timeDisplay">0:00 / 0:00</span>
         </div>
 
         <!-- Timeline Panel -->
@@ -1882,6 +1921,14 @@
       const caret = titleEl.querySelector('.caret');
       body.classList.toggle('collapsed');
       caret.classList.toggle('collapsed');
+    }
+
+    function setSubtitleMode(mode) {
+      const isManual = mode === 'manual';
+      document.getElementById('modeManualBtn').classList.toggle('active', isManual);
+      document.getElementById('modeTranscribeBtn').classList.toggle('active', !isManual);
+      document.getElementById('modeManualPane').classList.toggle('active', isManual);
+      document.getElementById('modeTranscribePane').classList.toggle('active', !isManual);
     }
 
     function toggleAdvanced(el) {
