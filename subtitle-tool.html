@@ -252,6 +252,8 @@
       border: 1px solid var(--panel-border);
       border-radius: 4px;
       overflow: hidden;
+      container-type: inline-size;
+      font-size: 1.67cqw;
     }
 
     .preview-bg {
@@ -507,8 +509,8 @@
       bottom: 5%;
       left: 50%;
       transform: translateX(-50%);
-      width: 44px;
-      height: 44px;
+      width: 4.58cqw;
+      height: 4.58cqw;
       position: absolute;
       border: 1.5px solid rgba(255, 255, 255, 0.12);
       border-radius: 50%;
@@ -518,7 +520,7 @@
     .arma-hud-compass::after {
       content: '172';
       position: absolute;
-      top: -14px;
+      top: -1.46cqw;
       left: 50%;
       transform: translateX(-50%);
       font-size: 0.55em;
@@ -528,11 +530,11 @@
 
     .arma-hud-compass .comp-needle {
       position: absolute;
-      top: 6px;
+      top: 0.625cqw;
       left: 50%;
       transform: translateX(-50%);
       width: 1px;
-      height: 10px;
+      height: 1.04cqw;
       background: rgba(255, 255, 255, 0.25);
     }
 
@@ -574,15 +576,15 @@
     .arma-hud-gps {
       bottom: 26%;
       right: 1.5%;
-      width: 60px;
-      height: 60px;
+      width: 6.25cqw;
+      height: 6.25cqw;
       border: 1px solid rgba(255, 255, 255, 0.08);
       background: rgba(0, 40, 0, 0.15);
     }
 
     .arma-hud-gps .gps-label {
       position: absolute;
-      top: -10px;
+      top: -1.04cqw;
       left: 0;
       right: 0;
       font-size: 0.4em;
@@ -620,7 +622,7 @@
     }
 
     .arma-hud-squad-bar .sb-slot {
-      width: 30px;
+      width: 3.13cqw;
       text-align: center;
       color: rgba(200, 220, 255, 0.18);
       padding-top: 2px;
@@ -1448,7 +1450,7 @@
                   <input type="range" id="titleSize" min="0.5" max="4" step="0.1" value="1.3">
                 </div>
                 <div>
-                  <label>Sub Size: <span id="subtitleSizeVal">1.1</span></label>
+                  <label>Subtitle Size: <span id="subtitleSizeVal">1.1</span></label>
                   <input type="range" id="subtitleSize" min="0.5" max="4" step="0.1" value="1.1">
                 </div>
               </div>
