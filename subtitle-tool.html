@@ -818,38 +818,45 @@
     .timeline-container {
       background: var(--panel);
       border: 1px solid var(--panel-border);
-      border-radius: 4px 4px 0 0;
-      height: 320px;
-      min-height: 100px;
+      border-radius: 4px;
+      flex: 1;
+      min-height: 0;
       overflow-y: auto;
     }
 
-    .timeline-resize-handle {
-      height: 8px;
-      background: var(--panel);
-      border: 1px solid var(--panel-border);
-      border-top: none;
-      border-radius: 0 0 4px 4px;
+    /* ── Tabs Area Resize Handle ── */
+    .tabs-resize-handle {
+      height: 12px;
+      width: 28px;
+      align-self: center;
+      margin-top: -6px;
+      margin-bottom: -6px;
+      flex-shrink: 0;
       cursor: ns-resize;
+      user-select: none;
+      position: relative;
+      z-index: 2;
       display: flex;
       align-items: center;
       justify-content: center;
-      user-select: none;
-      flex-shrink: 0;
     }
 
-    .timeline-resize-handle::after {
+    .tabs-resize-handle::after {
       content: '';
       display: block;
-      width: 32px;
-      height: 3px;
-      border-radius: 2px;
-      background: #444;
+      width: 18px;
+      height: 1px;
+      border-radius: 1px;
+      background: #404040;
+      box-shadow: 0 -4px 0 #404040, 0 4px 0 #404040;
+      transition: background 0.15s, box-shadow 0.15s;
     }
 
-    .timeline-resize-handle:hover::after,
-    .timeline-resize-handle.dragging::after {
+    .tabs-resize-handle:hover::after,
+    .tabs-resize-handle.dragging::after {
       background: var(--accent);
+      box-shadow: 0 -4px 0 var(--accent), 0 4px 0 var(--accent),
+                  0 0 6px var(--accent), 0 -4px 6px var(--accent), 0 4px 6px var(--accent);
     }
 
     .timeline-header {
@@ -1001,7 +1008,11 @@
     }
 
     .tab-panel.active {
-      display: block;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
     }
 
     /* ── History Tab ── */
@@ -1009,7 +1020,8 @@
       display: flex;
       flex-direction: column;
       gap: 6px;
-      max-height: 420px;
+      flex: 1;
+      min-height: 0;
       overflow-y: auto;
     }
 
@@ -1231,6 +1243,10 @@
       border: 1px solid var(--panel-border);
       border-radius: 4px;
       overflow: hidden;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
     }
 
     .code-output-header {
@@ -1244,11 +1260,24 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      flex-shrink: 0;
     }
 
     .code-output-wrap .code-output {
       border: none;
       border-radius: 0;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    /* ── Tabs Wrapper ── */
+    .tabs-wrapper {
+      display: flex;
+      flex-direction: column;
+      height: 380px;
+      min-height: 150px;
+      position: relative;
+      z-index: 1;
     }
 
     /* ── Tab refinements ── */
@@ -1658,7 +1687,8 @@
       </div>
 
       <!-- Tabs: Timeline / Code -->
-      <div style="flex:0 0 auto;">
+      <div class="tabs-wrapper" id="tabsWrapper">
+        <div class="tabs-resize-handle" id="tabsResizeHandle"></div>
         <div class="tab-bar">
           <button class="tab-btn active" onclick="switchTab('timeline')">Timeline</button>
           <button class="tab-btn" onclick="switchTab('code')">Code Output</button>
@@ -1680,8 +1710,7 @@
             </div>
             <div id="timelineEntries"><div class="timeline-empty"><strong>No subtitle lines yet</strong>Add lines manually with “+ Add Line”, or paste a script above and use Auto-Split.</div></div>
           </div>
-          <div class="timeline-resize-handle" id="timelineResizeHandle"></div>
-          <div class="btn-group" style="margin-top:6px;">
+          <div class="btn-group" style="margin-top:6px; flex-shrink:0;">
             <button class="btn btn-accent" onclick="addTimelineEntry()">+ Add Line</button>
             <button class="btn btn-primary" onclick="generateSQF()">&#9889; Generate SQF</button>
             <button class="btn" onclick="generateSQF(); copyCode();">&#128203; Copy SQF</button>
@@ -1710,7 +1739,7 @@
             </div>
             <div class="code-output visible" id="codeOutput">// Click “Generate SQF” to create code from your timeline entries.</div>
           </div>
-          <div class="btn-group" style="margin-top:6px;">
+          <div class="btn-group" style="margin-top:6px; flex-shrink:0;">
             <button class="btn btn-primary" onclick="copyCode()">&#128203; Copy to Clipboard</button>
             <button class="btn" onclick="generateSQF()">&#8635; Regenerate</button>
           </div>
@@ -1724,7 +1753,7 @@
             </div>
             <div class="code-output visible" id="cfgSoundsOutput">// Add a sound name and audio file to generate a CfgSounds config block.</div>
           </div>
-          <div class="btn-group" style="margin-top:6px;">
+          <div class="btn-group" style="margin-top:6px; flex-shrink:0;">
             <button class="btn btn-primary" onclick="copyCfgSounds()">&#128203; Copy to Clipboard</button>
             <button class="btn" onclick="generateCfgSounds()">&#8635; Generate</button>
           </div>
@@ -1863,16 +1892,16 @@
     }
 
     // ═══════════════════════════════════════════════════════
-    //  TIMELINE RESIZE
+    //  TABS AREA RESIZE
     // ═══════════════════════════════════════════════════════
     (function () {
-      const handle = document.getElementById('timelineResizeHandle');
-      const container = document.getElementById('timelineContainer');
+      const handle = document.getElementById('tabsResizeHandle');
+      const wrapper = document.getElementById('tabsWrapper');
       let startY, startH;
 
       handle.addEventListener('mousedown', function (e) {
         startY = e.clientY;
-        startH = container.offsetHeight;
+        startH = wrapper.offsetHeight;
         handle.classList.add('dragging');
         document.addEventListener('mousemove', onMove);
         document.addEventListener('mouseup', onUp);
@@ -1880,8 +1909,10 @@
       });
 
       function onMove(e) {
-        const newH = Math.max(100, startH + (e.clientY - startY));
-        container.style.height = newH + 'px';
+        const main = wrapper.parentElement;
+        const maxH = main.clientHeight - 32; // leave room for handle
+        const newH = Math.min(maxH, Math.max(150, startH - (e.clientY - startY)));
+        wrapper.style.height = newH + 'px';
       }
 
       function onUp() {
