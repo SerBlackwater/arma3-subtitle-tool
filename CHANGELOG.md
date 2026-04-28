@@ -33,9 +33,3 @@ Initial public beta release.
   - Supports stacked and inline layouts
   - Classic `cutText` fallback and positioned `ctrlCreate` mode
   - Two-control speaker/subtitle split for inline+positioned (prevents speaker shift)
-
-### Known Issues / Beta Notes
-- Whisper model (~75 MB) downloads on first transcription use; requires internet
-- `fn_createSubtitle.sqf` requires LAMBS-compatible Arma 3 build (standard vanilla compatible)
-- Batch transcription does not cross-load audio into the player element (UI shows first file only)
-- Generation history survives browser refreshes but not browser storage clears
