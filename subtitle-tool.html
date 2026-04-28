@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -818,9 +818,38 @@
     .timeline-container {
       background: var(--panel);
       border: 1px solid var(--panel-border);
-      border-radius: 4px;
-      max-height: 240px;
+      border-radius: 4px 4px 0 0;
+      height: 320px;
+      min-height: 100px;
       overflow-y: auto;
+    }
+
+    .timeline-resize-handle {
+      height: 8px;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-top: none;
+      border-radius: 0 0 4px 4px;
+      cursor: ns-resize;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      flex-shrink: 0;
+    }
+
+    .timeline-resize-handle::after {
+      content: '';
+      display: block;
+      width: 32px;
+      height: 3px;
+      border-radius: 2px;
+      background: #444;
+    }
+
+    .timeline-resize-handle:hover::after,
+    .timeline-resize-handle.dragging::after {
+      background: var(--accent);
     }
 
     .timeline-header {
@@ -1146,16 +1175,12 @@
 
     .step-nav {
       display: flex;
-      justify-content: flex-end;
+      justify-content: space-between;
       align-items: center;
       gap: 8px;
       margin: 12px 0 4px;
       padding-top: 10px;
       border-top: 1px solid var(--panel-border);
-    }
-
-    .step-nav.has-back {
-      justify-content: space-between;
     }
 
     /* ── Primary Button ── */
@@ -1413,6 +1438,7 @@
         </div>
 
         <div class="step-nav">
+          <span></span>
           <button class="btn btn-primary" onclick="goToStep(2)">Subtitle &rarr;</button>
         </div>
 
@@ -1491,7 +1517,7 @@
           </div>
         </div>
 
-        <div class="step-nav has-back">
+        <div class="step-nav">
           <button class="btn" onclick="goToStep(1)">&larr; Style</button>
           <button class="btn btn-primary" onclick="goToStep(3)">Generate &rarr;</button>
         </div>
@@ -1654,6 +1680,7 @@
             </div>
             <div id="timelineEntries"><div class="timeline-empty"><strong>No subtitle lines yet</strong>Add lines manually with “+ Add Line”, or paste a script above and use Auto-Split.</div></div>
           </div>
+          <div class="timeline-resize-handle" id="timelineResizeHandle"></div>
           <div class="btn-group" style="margin-top:6px;">
             <button class="btn btn-accent" onclick="addTimelineEntry()">+ Add Line</button>
             <button class="btn btn-primary" onclick="generateSQF()">&#9889; Generate SQF</button>
@@ -1834,6 +1861,35 @@
       body.classList.toggle('open');
       arrow.classList.toggle('open');
     }
+
+    // ═══════════════════════════════════════════════════════
+    //  TIMELINE RESIZE
+    // ═══════════════════════════════════════════════════════
+    (function () {
+      const handle = document.getElementById('timelineResizeHandle');
+      const container = document.getElementById('timelineContainer');
+      let startY, startH;
+
+      handle.addEventListener('mousedown', function (e) {
+        startY = e.clientY;
+        startH = container.offsetHeight;
+        handle.classList.add('dragging');
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+        e.preventDefault();
+      });
+
+      function onMove(e) {
+        const newH = Math.max(100, startH + (e.clientY - startY));
+        container.style.height = newH + 'px';
+      }
+
+      function onUp() {
+        handle.classList.remove('dragging');
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      }
+    })();
 
     // ═══════════════════════════════════════════════════════
     //  PRESETS
