@@ -5,6 +5,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.2.1] — 2026-04-29
+
+### Added
+- **Output Format select** — choose between `fn_createSubtitle` (default) and `fn_createSideTitle` directly in the Style step
+- **Text Alignment select** — configure subtitle text alignment (Center / Left / Right); applied to both the preview and all generated SQF structured text tags
+- **SideTitle reimplemented** — selecting `fn_createSideTitle` applies a right-anchored, typewriter-style preview; generates `remoteExec ["SB_fnc_createSideTitle", 0]` calls
+- **`fn_createSideTitle.sqf`** — new companion function; displays a speaker name and subtitle right-aligned on the right side of the screen with optional fade-out
+- **Audioless timeline playback** — Play All now works with no audio file loaded; a timer-based engine paces through timeline entries and shows a live `0:00 / 0:00` counter
+
+### Fixed
+- **Drag coordinate accuracy** — `getSubtitlePosition()` and drag `mousemove` now account for the 1px preview frame border, so editor positions map accurately to in-game safezone coordinates
+- **Duration auto-pacing for manual entries** — typing subtitle text into a timeline row now auto-calculates duration from character count using the Reading Speed (c/s) setting; manually editing the duration field locks it and prevents auto-override
+- **Play All button** always visible regardless of whether an audio file is loaded
+
+### Changed
+- **"Manual" mode renamed to "Preview"** in the Subtitle step mode picker and toggle buttons
+
+---
+
 ## [0.2.0-beta] — 2026-04-27
 
 ### UI Overhaul — Wizard Sidebar & Resizable Layout
