@@ -419,6 +419,26 @@
       cursor: se-resize;
     }
 
+    /* Side-title style (typewriter) */
+    .subtitle-display.side-title {
+      width: 60%;
+    }
+
+    .subtitle-display.side-title .subtitle-title {
+      font-weight: 700;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.9);
+    }
+
+    .subtitle-display.side-title .subtitle-text {
+      font-size: 1.5em;
+      overflow: hidden;
+      white-space: nowrap;
+      border-right: 2px solid rgba(255, 255, 255, 0.6);
+      animation: typing 2s steps(40, end), blink-caret 0.5s step-end infinite;
+      display: inline-block;
+      max-width: 100%;
+    }
+
     .subtitle-display.visible {
       opacity: 1;
     }
@@ -1556,7 +1576,17 @@
                 <input type="checkbox" id="stripPunctuation" onchange="updatePreviewText()">
                 <label style="margin:0; cursor:pointer;" for="stripPunctuation">Strip punctuation from output</label>
               </div>
-              <input type="hidden" id="outputFormat" value="subtitle">
+              <label>Output Format</label>
+              <select id="outputFormat" onchange="updatePreviewStyle(); generateSQF()">
+                <option value="subtitle">fn_createSubtitle</option>
+                <option value="sideTitle">fn_createSideTitle</option>
+              </select>
+              <label style="margin-top:6px;">Text Alignment</label>
+              <select id="subtitleAlign" onchange="updatePreviewStyle(); generateSQF()">
+                <option value="center">Center</option>
+                <option value="left">Left</option>
+                <option value="right">Right</option>
+              </select>
             </div>
           </div>
         </div>
@@ -1582,7 +1612,7 @@
                 <button class="mode-picker-btn" onclick="setSubtitleMode('manual')">
                   <span class="mpb-icon">&#9998;</span>
                   <div>
-                    <div class="mpb-label">Manual</div>
+                    <div class="mpb-label">Preview</div>
                     <div class="mpb-desc">Type speaker and subtitle text directly</div>
                   </div>
                 </button>
@@ -1599,7 +1629,7 @@
             <!-- Manual pane -->
             <div class="mode-pane" id="modeManualPane">
               <div class="mode-toggle" style="margin-bottom:10px;">
-                <button class="active" id="modeManualBtn" onclick="setSubtitleMode('manual')">&#9998; Manual</button>
+                <button class="active" id="modeManualBtn" onclick="setSubtitleMode('manual')">&#9998; Preview</button>
                 <button id="modeTranscribeBtn" onclick="setSubtitleMode('transcribe')">&#127908; Transcribed</button>
               </div>
               <label>Speaker / Title</label>
@@ -1621,7 +1651,7 @@
             <!-- Transcribed pane -->
             <div class="mode-pane" id="modeTranscribePane">
               <div class="mode-toggle" style="margin-bottom:10px;">
-                <button id="modeManualBtn2" onclick="setSubtitleMode('manual')">&#9998; Manual</button>
+                <button id="modeManualBtn2" onclick="setSubtitleMode('manual')">&#9998; Preview</button>
                 <button class="active" id="modeTranscribeBtn2" onclick="setSubtitleMode('transcribe')">&#127908; Transcribed</button>
               </div>
               <label>Speaker / Title</label>
@@ -1815,11 +1845,11 @@
         </div>
 
         <!-- Audio Bar -->
-        <div class="audio-bar" id="audioBar" style="display:none;">
+        <div class="audio-bar" id="audioBar">
           <button class="btn btn-small btn-accent" id="playAllBtn" onclick="playTimeline()">&#9654; Play All</button>
           <button class="btn btn-small" id="stopBtn" onclick="stopTimeline()">&#9632; Stop</button>
-          <audio id="audioPlayer" controls></audio>
-          <span class="time-display" id="timeDisplay">0:00 / 0:00</span>
+          <audio id="audioPlayer" controls style="display:none;"></audio>
+          <span class="time-display" id="timeDisplay" style="display:none;">0:00 / 0:00</span>
         </div>
 
         <!-- Timeline Panel -->
@@ -2216,11 +2246,14 @@
       const frame = $('previewFrame');
       const fRect = frame.getBoundingClientRect();
       const sRect = sub.getBoundingClientRect();
+      const bw = 1; // preview-frame border-width
+      const innerW = fRect.width - 2 * bw;
+      const innerH = fRect.height - 2 * bw;
 
       return {
-        x: round2(Math.max(0, (sRect.left - fRect.left) / fRect.width)),
-        y: round2(Math.max(0, (sRect.top - fRect.top) / fRect.height)),
-        w: round2(sRect.width / fRect.width)
+        x: round2(Math.max(0, (sRect.left - fRect.left - bw) / innerW)),
+        y: round2(Math.max(0, (sRect.top - fRect.top - bw) / innerH)),
+        w: round2(sRect.width / innerW)
       };
     }
 
@@ -2315,6 +2348,13 @@
       const isLight = /Light/i.test(font);
       titleEl.style.fontWeight = isBold ? '700' : isLight ? '300' : '600';
       textEl.style.fontWeight = isBold ? '700' : isLight ? '300' : '600';
+
+      // Apply text alignment and side-title class
+      const isSide = $('outputFormat').value === 'sideTitle';
+      const align = getAlignment();
+      titleEl.style.textAlign = align;
+      textEl.style.textAlign = align;
+      display.classList.toggle('side-title', isSide);
 
       // Apply preset CSS class
       const presetKey = $('stylePreset').value;
@@ -2418,6 +2458,12 @@
       titleEl.style.fontFamily = webFont;
       textEl.style.fontFamily = webFont;
 
+      const isSide = format === 'sideTitle';
+      display.classList.toggle('side-title', isSide);
+      const playAlign = getAlignment();
+      titleEl.style.textAlign = playAlign;
+      textEl.style.textAlign = playAlign;
+
       const sameSpeaker = (title === currentDisplayedTitle) && display.classList.contains('visible');
 
       if (sameSpeaker) {
@@ -2502,12 +2548,15 @@
         }
         if (!dragging) return;
         const fr = frame.getBoundingClientRect();
-        let x = e.clientX - fr.left - offX;
-        let y = e.clientY - fr.top - offY;
-        x = Math.max(0, Math.min(x, fr.width - sub.offsetWidth));
-        y = Math.max(0, Math.min(y, fr.height - sub.offsetHeight));
-        sub.style.left = (x / fr.width * 100) + '%';
-        sub.style.top = (y / fr.height * 100) + '%';
+        const bw = 1; // preview-frame border-width
+        const innerW = fr.width - 2 * bw;
+        const innerH = fr.height - 2 * bw;
+        let x = e.clientX - (fr.left + bw) - offX;
+        let y = e.clientY - (fr.top + bw) - offY;
+        x = Math.max(0, Math.min(x, innerW - sub.offsetWidth));
+        y = Math.max(0, Math.min(y, innerH - sub.offsetHeight));
+        sub.style.left = (x / innerW * 100) + '%';
+        sub.style.top = (y / innerH * 100) + '%';
         sub.style.bottom = 'auto';
         sub.style.right = 'auto';
         $('positionPreset').value = 'custom';
@@ -2533,7 +2582,8 @@
 
       const url = URL.createObjectURL(file);
       audioElement.src = url;
-      $('audioBar').style.display = 'flex';
+      $('audioPlayer').style.removeProperty('display');
+      $('timeDisplay').style.removeProperty('display');
 
       // Auto-generate sound class name from filename
       const baseName = file.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_]/g, '_');
@@ -2631,9 +2681,16 @@
 
         // Event listeners
         div.querySelector('.entry-start').addEventListener('change', e => { entry.start = parseFloat(e.target.value) || 0; renderTimeline(); });
-        div.querySelector('.entry-dur').addEventListener('change', e => { entry.duration = parseFloat(e.target.value) || 1; renderTimeline(); });
+        div.querySelector('.entry-dur').addEventListener('change', e => { entry.duration = parseFloat(e.target.value) || 1; entry._manualDur = true; renderTimeline(); });
         div.querySelector('.entry-title').addEventListener('change', e => { entry.title = e.target.value; renderTimeline(); });
-        div.querySelector('.entry-subtitle').addEventListener('change', e => { entry.subtitle = e.target.value; renderTimeline(); });
+        div.querySelector('.entry-subtitle').addEventListener('change', e => {
+          entry.subtitle = e.target.value;
+          if (!entry._manualDur) {
+            const cps = parseFloat($('targetCPS').value) || 15;
+            entry.duration = Math.max(1.5, Math.round((e.target.value.length / cps) * 10) / 10);
+          }
+          renderTimeline();
+        });
         div.querySelector('.remove-btn').addEventListener('click', () => removeTimelineEntry(entry.id));
 
         container.appendChild(div);
@@ -2691,14 +2748,16 @@
         audioElement.play();
       } else {
         // Simulate playback with a timer
+        const maxEnd = Math.max(...timeline.map(e => e.start + e.duration));
+        $('timeDisplay').style.removeProperty('display');
         let startTime = performance.now();
         playbackTimer = setInterval(() => {
           const elapsed = (performance.now() - startTime) / 1000;
+          $('timeDisplay').textContent = formatTime(elapsed) + ' / ' + formatTime(maxEnd);
           highlightActiveEntry(elapsed);
 
           // Stop after last entry ends
-          const maxEnd = Math.max(...timeline.map(e => e.start + e.duration));
-          if (elapsed > maxEnd + 1) {
+          if (elapsed > maxEnd + 0.5) {
             stopTimeline();
           }
         }, 50);
@@ -2710,7 +2769,8 @@
       currentActiveIdx = -1;
       currentDisplayedTitle = '';
       if (playbackTimer) { clearInterval(playbackTimer); playbackTimer = null; }
-      if (audioElement.src) { audioElement.pause(); }
+      if (audioElement.src && audioElement.readyState >= 1) { audioElement.pause(); }
+      else { $('timeDisplay').style.display = 'none'; }
       hideSubtitle();
 
       document.querySelectorAll('.timeline-entry').forEach(el => el.classList.remove('active'));
@@ -3110,7 +3170,11 @@
           code += '"' + escapeSQF(soundClass) + '" remoteExec ["playSound", 0];\n\n';
         }
 
-        code += formatSubtitleCall(strip ? processText(title) : title, strip ? processText(subtitle) : subtitle, dur, tc, sc, ts, ss, font, true, sqfMode, pos, getActiveLayout(), getActiveTitleTransform()) + '\n';
+        if (format === 'subtitle') {
+          code += formatSubtitleCall(strip ? processText(title) : title, strip ? processText(subtitle) : subtitle, dur, tc, sc, ts, ss, font, true, sqfMode, pos, getActiveLayout(), getActiveTitleTransform()) + '\n';
+        } else {
+          code += formatSideTitleCall(strip ? processText(title) : title, strip ? processText(subtitle) : subtitle, tc) + '\n';
+        }
 
         output.textContent = code;
       } else {
@@ -3125,9 +3189,10 @@
         const hasPos = pos && (pos.x !== undefined);
         const layout = getActiveLayout();
         const titleTransform = getActiveTitleTransform();
+        const align = getAlignment();
         const multiFmtStr = layout === 'inline'
-          ? "<t align='left' size='%1' color='%2' font='%3'>%4:  </t><t align='left' size='%5' color='%6' font='%3'>%7</t>"
-          : "<t align='center' size='%1' color='%2' font='%3'>%4</t><br/><t align='center' size='%5' color='%6' font='%3'>%7</t>";
+          ? "<t align='" + align + "' size='%1' color='%2' font='%3'>%4:  </t><t align='" + align + "' size='%5' color='%6' font='%3'>%7</t>"
+          : "<t align='" + align + "' size='%1' color='%2' font='%3'>%4</t><br/><t align='" + align + "' size='%5' color='%6' font='%3'>%7</t>";
 
         if (format === 'subtitle' && sqfMode === 'inline') {
           const isInlinePos = hasPos && layout === 'inline';
@@ -3289,7 +3354,11 @@
             const sameSpeakerNext = nextEntry && nextEntry.title === entry.title;
             const fadeOut = !sameSpeakerNext;
 
-            code += '  ' + formatSubtitleCall(entryTitle, entrySub, entry.duration, tc, sc, ts, ss, font, fadeOut, sqfMode, pos, getActiveLayout(), getActiveTitleTransform()) + '\n';
+            if (format === 'subtitle') {
+              code += '  ' + formatSubtitleCall(entryTitle, entrySub, entry.duration, tc, sc, ts, ss, font, fadeOut, sqfMode, pos, getActiveLayout(), getActiveTitleTransform()) + '\n';
+            } else {
+              code += '  ' + formatSideTitleCall(entryTitle, entrySub, tc) + '\n';
+            }
             code += '  sleep ' + round2(entry.duration) + ';\n';
 
             prevEnd = entry.start + entry.duration;
@@ -3319,6 +3388,11 @@
       return preset ? (preset.titleTransform || '') : '';
     }
 
+    function getAlignment() {
+      const el = $('subtitleAlign');
+      return el ? el.value : 'center';
+    }
+
     function formatSubtitleCall(title, subtitle, duration, titleColor, subtitleColor, titleSize, subSize, font, fadeOut, mode, pos, layout, titleTransform) {
       layout = layout || 'stacked';
       let t = escapeSQF(title);
@@ -3329,9 +3403,10 @@
       const isInline = layout === 'inline';
 
       // Build format string based on layout
+      const align = getAlignment();
       const fmtStr = isInline
-        ? "<t align='left' size='%1' color='%2' font='%3'>%4:  </t><t align='left' size='%5' color='%6' font='%3'>%7</t>"
-        : "<t align='center' size='%1' color='%2' font='%3'>%4</t><br/><t align='center' size='%5' color='%6' font='%3'>%7</t>";
+        ? "<t align='" + align + "' size='%1' color='%2' font='%3'>%4:  </t><t align='" + align + "' size='%5' color='%6' font='%3'>%7</t>"
+        : "<t align='" + align + "' size='%1' color='%2' font='%3'>%4</t><br/><t align='" + align + "' size='%5' color='%6' font='%3'>%7</t>";
       const cutTextEffect = isInline ? 'PLAIN' : 'PLAIN DOWN';
 
       if (mode === 'inline') {
@@ -3491,6 +3566,10 @@
       return params + ' remoteExec ["SB_fnc_createSubtitle", 0];';
     }
 
+    function formatSideTitleCall(title, subtitle, color) {
+      return '["' + escapeSQF(title) + '", "' + escapeSQF(subtitle) + '", "' + color + '"] remoteExec ["SB_fnc_createSideTitle", 0];';
+    }
+
     function escapeSQF(s) {
       return s.replace(/\\/g, '\\\\').replace(/"/g, '""');
     }
@@ -3584,6 +3663,7 @@
         subtitleSize: $('subtitleSize').value,
         previewDuration: $('previewDuration').value,
         outputFormat: $('outputFormat').value,
+        subtitleAlign: $('subtitleAlign').value,
         manualDuration: $('manualDuration').value,
         transcriptText: $('transcriptText').value,
         maxCharsPerEntry: $('maxCharsPerEntry').value,
@@ -3673,6 +3753,7 @@
       $('subtitleSizeVal').textContent = p.subtitleSize || '1.1';
       $('previewDuration').value = p.previewDuration || '5';
       $('outputFormat').value = p.outputFormat || 'subtitle';
+      $('subtitleAlign').value = p.subtitleAlign || 'center';
       $('manualDuration').value = p.manualDuration || '';
       $('transcriptText').value = p.transcriptText || '';
       $('maxCharsPerEntry').value = p.maxCharsPerEntry || '70';
@@ -3741,6 +3822,7 @@
         subtitleSize: $('subtitleSize').value,
         previewDuration: $('previewDuration').value,
         outputFormat: $('outputFormat').value,
+        subtitleAlign: $('subtitleAlign').value,
         manualDuration: $('manualDuration').value,
         transcriptTitle: $('previewTitle').value,
         transcriptText: $('transcriptText').value,
@@ -3787,6 +3869,7 @@
         $('subtitleSizeVal').textContent = project.subtitleSize || '1.1';
         $('previewDuration').value = project.previewDuration || '5';
         $('outputFormat').value = project.outputFormat || 'subtitle';
+        $('subtitleAlign').value = project.subtitleAlign || 'center';
         $('manualDuration').value = project.manualDuration || '';
         $('previewTitle').value = project.transcriptTitle || project.previewTitle || '';
         $('transcriptText').value = project.transcriptText || '';
