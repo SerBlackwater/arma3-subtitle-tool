@@ -5,7 +5,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [0.2.1] — 2026-04-29
+## [0.2.1-beta] — 2026-04-29
 
 ### Added
 - **Output Format select** — choose between `fn_createSubtitle` (default) and `fn_createSideTitle` directly in the Style step
