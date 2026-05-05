@@ -2237,6 +2237,7 @@
       el.style.bottom = p.bottom;
       el.style.right = p.right;
       el.style.transform = '';
+      updatePreviewStyle();
     }
 
     // Get subtitle position as normalized 0-1 fractions of the preview frame
@@ -2352,8 +2353,7 @@
       // Apply text alignment and side-title class
       const isSide = $('outputFormat').value === 'sideTitle';
       const align = getAlignment();
-      titleEl.style.textAlign = align;
-      textEl.style.textAlign = align;
+      display.style.textAlign = align;
       display.classList.toggle('side-title', isSide);
 
       // Apply preset CSS class
@@ -2460,9 +2460,7 @@
 
       const isSide = format === 'sideTitle';
       display.classList.toggle('side-title', isSide);
-      const playAlign = getAlignment();
-      titleEl.style.textAlign = playAlign;
-      textEl.style.textAlign = playAlign;
+      display.style.textAlign = getAlignment();
 
       const sameSpeaker = (title === currentDisplayedTitle) && display.classList.contains('visible');
 
