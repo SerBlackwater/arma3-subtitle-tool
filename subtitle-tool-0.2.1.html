@@ -434,9 +434,12 @@
       overflow: hidden;
       white-space: nowrap;
       border-right: 2px solid rgba(255, 255, 255, 0.6);
-      animation: typing 2s steps(40, end), blink-caret 0.5s step-end infinite;
       display: inline-block;
       max-width: 100%;
+    }
+
+    .subtitle-display.side-title .subtitle-text.side-title-typing {
+      animation: typing 2s steps(40, end), blink-caret 0.5s step-end infinite;
     }
 
     .subtitle-display.visible {
@@ -2355,6 +2358,7 @@
       const align = getAlignment();
       display.style.textAlign = align;
       display.classList.toggle('side-title', isSide);
+      if (isSide) restartTypingAnimation();
 
       // Apply preset CSS class
       const presetKey = $('stylePreset').value;
@@ -2386,6 +2390,8 @@
       // Reset
       display.classList.remove('visible', 'fade-in', 'fade-out');
       void display.offsetWidth; // force reflow
+
+      if ($('outputFormat').value === 'sideTitle') restartTypingAnimation();
 
       if (fade) {
         // Fade in
@@ -2461,6 +2467,7 @@
       const isSide = format === 'sideTitle';
       display.classList.toggle('side-title', isSide);
       display.style.textAlign = getAlignment();
+      if (isSide) restartTypingAnimation();
 
       const sameSpeaker = (title === currentDisplayedTitle) && display.classList.contains('visible');
 
@@ -2494,6 +2501,13 @@
     function hideSubtitle() {
       currentDisplayedTitle = '';
       previewFadeOut();
+    }
+
+    function restartTypingAnimation() {
+      const textEl = $('subTextEl');
+      textEl.classList.remove('side-title-typing');
+      void textEl.offsetWidth; // force reflow to reset animation
+      textEl.classList.add('side-title-typing');
     }
 
     // Draggable + Resizable subtitle positioning
