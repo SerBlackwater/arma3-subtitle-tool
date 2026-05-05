@@ -1536,7 +1536,8 @@
               <option value="center-bottom">Center Bottom</option>
               <option value="center-top">Center Top</option>
               <option value="left-bottom">Left Bottom</option>
-              <option value="right-center">Right Center (Side Title)</option>
+              <option value="left-center">Left Center</option>
+              <option value="right-center">Right Center</option>
               <option value="custom">Custom (drag on preview)</option>
             </select>
 
@@ -1974,6 +1975,7 @@
       'center-bottom': { left: '10%', top: 'auto', bottom: '30%', right: 'auto' },
       'center-top':    { left: '10%', top: '12%',  bottom: 'auto', right: 'auto' },
       'left-bottom':   { left: '3%',  top: 'auto', bottom: '30%', right: 'auto' },
+      'left-center':   { left: '2%',  top: 'auto',  bottom: '41%', right: 'auto' },
       'right-center':  { left: 'auto', top: 'auto', bottom: '41%', right: '2%' },
     };
 
@@ -2235,11 +2237,17 @@
       if (!p) return;
 
       const el = $('subtitleDisplay');
-      el.style.left = p.left;
-      el.style.top = p.top;
-      el.style.bottom = p.bottom;
-      el.style.right = p.right;
-      el.style.transform = '';
+      // Fully remove all position properties before applying new preset
+      el.style.removeProperty('left');
+      el.style.removeProperty('top');
+      el.style.removeProperty('bottom');
+      el.style.removeProperty('right');
+      el.style.removeProperty('transform');
+      void el.offsetWidth; // force reflow
+      if (p.left !== 'auto')   el.style.left   = p.left;
+      if (p.top !== 'auto')    el.style.top    = p.top;
+      if (p.bottom !== 'auto') el.style.bottom = p.bottom;
+      if (p.right !== 'auto')  el.style.right  = p.right;
       updatePreviewStyle();
     }
 
