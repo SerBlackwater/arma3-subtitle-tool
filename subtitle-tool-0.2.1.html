@@ -425,7 +425,9 @@
     }
 
     .subtitle-display.side-title .subtitle-title {
+      display: block;
       font-weight: 700;
+      margin-bottom: 0.2em;
       text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.9);
     }
 
@@ -439,7 +441,7 @@
     }
 
     .subtitle-display.side-title .subtitle-text.side-title-typing {
-      animation: typing 2s steps(40, end), blink-caret 0.5s step-end infinite;
+      animation: typing 5.76s steps(40, end), blink-caret 0.5s step-end infinite;
     }
 
     .subtitle-display.visible {
@@ -2729,7 +2731,7 @@
         div.querySelector('.entry-subtitle').addEventListener('change', e => {
           entry.subtitle = e.target.value;
           if (!entry._manualDur) {
-            const cps = parseFloat($('targetCPS').value) || 15;
+            const cps = getEffectiveTargetCPS();
             entry.duration = Math.max(1.5, Math.round((e.target.value.length / cps) * 10) / 10);
           }
           renderTimeline();
@@ -2829,7 +2831,7 @@
 
       const title = $('transcribeSpeaker').value.trim() || $('previewTitle').value.trim() || 'Title';
       const maxChars = parseInt($('maxCharsPerEntry').value) || 70;
-      const targetCPS = parseInt($('targetCPS').value) || 15;
+      const targetCPS = getEffectiveTargetCPS();
       const totalDuration = getAudioDuration();
 
       // Split text into chunks respecting word boundaries
@@ -3044,7 +3046,7 @@
         // Capture shared settings once (style/preset/font etc.) for batch history entries
         const baseSettings = isBatch ? captureSnapshot('', null) : null;
         const maxChars = parseInt($('maxCharsPerEntry').value) || 70;
-        const targetCPS = parseInt($('targetCPS').value) || 15;
+        const targetCPS = getEffectiveTargetCPS();
         const title = $('transcribeSpeaker').value.trim() || $('previewTitle').value.trim() || 'Title';
         let transcribedCount = 0;
 
@@ -3216,7 +3218,7 @@
         if (format === 'subtitle') {
           code += formatSubtitleCall(strip ? processText(title) : title, strip ? processText(subtitle) : subtitle, dur, tc, sc, ts, ss, font, true, sqfMode, pos, getActiveLayout(), getActiveTitleTransform()) + '\n';
         } else {
-          code += formatSideTitleCall(strip ? processText(title) : title, strip ? processText(subtitle) : subtitle, tc, pos) + '\n';
+          code += formatSideTitleCall(strip ? processText(title) : title, strip ? processText(subtitle) : subtitle, tc, pos, (dur * 1.2) + 3) + '\n';
         }
 
         output.textContent = code;
@@ -3400,9 +3402,9 @@
             if (format === 'subtitle') {
               code += '  ' + formatSubtitleCall(entryTitle, entrySub, entry.duration, tc, sc, ts, ss, font, fadeOut, sqfMode, pos, getActiveLayout(), getActiveTitleTransform()) + '\n';
             } else {
-              code += '  ' + formatSideTitleCall(entryTitle, entrySub, tc, pos) + '\n';
+              code += '  ' + formatSideTitleCall(entryTitle, entrySub, tc, pos, (entry.duration * 1.2) + 3) + '\n';
             }
-            code += '  sleep ' + round2(entry.duration) + ';\n';
+            code += '  sleep ' + round2((format === 'sideTitle' ? (entry.duration * 1.2) + 3 : entry.duration)) + ';\n';
 
             prevEnd = entry.start + entry.duration;
           });
@@ -3434,6 +3436,14 @@
     function getAlignment() {
       const el = $('subtitleAlign');
       return el ? el.value : 'center';
+    }
+
+    function getEffectiveTargetCPS() {
+      const baseCPS = parseFloat($('targetCPS').value) || 15;
+      const isSideTitle = $('outputFormat') && $('outputFormat').value === 'sideTitle';
+      // BIS_fnc_typeText renders slower than cutText-style subtitles.
+      // Apply an additional 15% slowdown for sideTitle pacing.
+      return isSideTitle ? Math.max(4, baseCPS * 0.5202) : baseCPS;
     }
 
     function formatSubtitleCall(title, subtitle, duration, titleColor, subtitleColor, titleSize, subSize, font, fadeOut, mode, pos, layout, titleTransform) {
@@ -3609,8 +3619,9 @@
       return params + ' remoteExec ["SB_fnc_createSubtitle", 0];';
     }
 
-    function formatSideTitleCall(title, subtitle, color, pos) {
+    function formatSideTitleCall(title, subtitle, color, pos, duration) {
       let params = '["' + escapeSQF(title) + '", "' + escapeSQF(subtitle) + '", "' + color + '"';
+      const sideTitleDuration = round2(duration || 5);
       if (pos && pos.x !== undefined) {
         // BIS_fnc_typeText uses an anchor X, not a box-left X.
         // Convert preview box coordinates to the text anchor based on alignment.
@@ -3624,7 +3635,7 @@
         }
         anchorX = round2(Math.max(0, Math.min(1, anchorX)));
 
-        params += ', 5, true, ' + anchorX + ', ' + pos.y + ', "' + escapeSQF(preset) + '", "' + escapeSQF(align) + '"';
+        params += ', ' + sideTitleDuration + ', true, ' + anchorX + ', ' + pos.y + ', "' + escapeSQF(preset) + '", "' + escapeSQF(align) + '"';
       }
       params += ']';
       return params + ' remoteExec ["SB_fnc_createSideTitle", 0];';
