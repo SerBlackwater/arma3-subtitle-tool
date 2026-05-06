@@ -47,14 +47,16 @@ if !(_align in ["left", "center", "right"]) then {
 private _preset = toLower _positionPreset;
 private _typePosX = 0;
 private _typePosY = 0;
+private _verticalOffset = -0.13;
+private _edgeInset = 0.02;
 
 switch (_preset) do {
     case "right-center": {
-        _typePosX = -safeZoneX;
+        _typePosX = (-safeZoneX) - _edgeInset;
         _typePosY = 0.5;
     };
     case "left-center": {
-        _typePosX = 0;
+        _typePosX = _edgeInset;
         _typePosY = 0.5;
     };
     case "center-top": {
@@ -66,7 +68,7 @@ switch (_preset) do {
         _typePosY = 0.85;
     };
     case "left-bottom": {
-        _typePosX = 0;
+        _typePosX = _edgeInset;
         _typePosY = 0.85;
     };
     default {
@@ -76,10 +78,12 @@ switch (_preset) do {
     };
 };
 
+_typePosY = (_typePosY + _verticalOffset) max 0;
+
 // Keep title static via rootFormat and type only subtitle.
 // Note: %%1 is required so SQF format outputs a literal %1 placeholder for BIS_fnc_typeText.
-private _rootFormat = format ["<t align='%4' size='1.3' color='%1' font='%2'>%3</t><br/>%%1", _titleColor, _font, _title, _align];
-private _subtitleFormat = format ["<t align='%2' size='1.1' color='#FFFFFF' font='%1'>%%1</t>", _font, _align];
+private _rootFormat = format ["<t align='%4' size='0.886' color='%1' font='%2'>%3</t><br/>%%1", _titleColor, _font, _title, _align];
+private _subtitleFormat = format ["<t align='%2' size='0.732' color='#FFFFFF' font='%1'>%%1</t>", _font, _align];
 
 // Syntax: [stringLines, posX, posY, rootFormat] spawn BIS_fnc_typeText
 private _typingHandle = [
