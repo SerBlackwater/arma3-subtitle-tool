@@ -2262,6 +2262,29 @@
       const innerW = fRect.width - 2 * bw;
       const innerH = fRect.height - 2 * bw;
 
+      const presetKey = $('positionPreset') ? $('positionPreset').value : 'custom';
+      const preset = POSITION_PRESETS[presetKey];
+      // For fixed presets, compute normalized coordinates directly from preset values
+      // so generated SQF reliably reflects dropdown changes.
+      if (preset && presetKey !== 'custom' && innerW > 0 && innerH > 0) {
+        const w = sRect.width / innerW;
+        const h = sRect.height / innerH;
+
+        const leftPct = preset.left !== 'auto' ? parseFloat(preset.left) / 100 : null;
+        const rightPct = preset.right !== 'auto' ? parseFloat(preset.right) / 100 : null;
+        const topPct = preset.top !== 'auto' ? parseFloat(preset.top) / 100 : null;
+        const bottomPct = preset.bottom !== 'auto' ? parseFloat(preset.bottom) / 100 : null;
+
+        const x = leftPct !== null ? leftPct : (rightPct !== null ? (1 - rightPct - w) : (sRect.left - fRect.left - bw) / innerW);
+        const y = topPct !== null ? topPct : (bottomPct !== null ? (1 - bottomPct - h) : (sRect.top - fRect.top - bw) / innerH);
+
+        return {
+          x: round2(Math.max(0, x)),
+          y: round2(Math.max(0, y)),
+          w: round2(w)
+        };
+      }
+
       return {
         x: round2(Math.max(0, (sRect.left - fRect.left - bw) / innerW)),
         y: round2(Math.max(0, (sRect.top - fRect.top - bw) / innerH)),
@@ -3193,7 +3216,7 @@
         if (format === 'subtitle') {
           code += formatSubtitleCall(strip ? processText(title) : title, strip ? processText(subtitle) : subtitle, dur, tc, sc, ts, ss, font, true, sqfMode, pos, getActiveLayout(), getActiveTitleTransform()) + '\n';
         } else {
-          code += formatSideTitleCall(strip ? processText(title) : title, strip ? processText(subtitle) : subtitle, tc) + '\n';
+          code += formatSideTitleCall(strip ? processText(title) : title, strip ? processText(subtitle) : subtitle, tc, pos) + '\n';
         }
 
         output.textContent = code;
@@ -3377,7 +3400,7 @@
             if (format === 'subtitle') {
               code += '  ' + formatSubtitleCall(entryTitle, entrySub, entry.duration, tc, sc, ts, ss, font, fadeOut, sqfMode, pos, getActiveLayout(), getActiveTitleTransform()) + '\n';
             } else {
-              code += '  ' + formatSideTitleCall(entryTitle, entrySub, tc) + '\n';
+              code += '  ' + formatSideTitleCall(entryTitle, entrySub, tc, pos) + '\n';
             }
             code += '  sleep ' + round2(entry.duration) + ';\n';
 
@@ -3586,8 +3609,25 @@
       return params + ' remoteExec ["SB_fnc_createSubtitle", 0];';
     }
 
-    function formatSideTitleCall(title, subtitle, color) {
-      return '["' + escapeSQF(title) + '", "' + escapeSQF(subtitle) + '", "' + color + '"] remoteExec ["SB_fnc_createSideTitle", 0];';
+    function formatSideTitleCall(title, subtitle, color, pos) {
+      let params = '["' + escapeSQF(title) + '", "' + escapeSQF(subtitle) + '", "' + color + '"';
+      if (pos && pos.x !== undefined) {
+        // BIS_fnc_typeText uses an anchor X, not a box-left X.
+        // Convert preview box coordinates to the text anchor based on alignment.
+        const align = getAlignment();
+        const preset = $('positionPreset') ? $('positionPreset').value : 'custom';
+        let anchorX = pos.x;
+        if (align === 'right') {
+          anchorX = pos.x + pos.w;
+        } else if (align === 'center') {
+          anchorX = pos.x + (pos.w / 2);
+        }
+        anchorX = round2(Math.max(0, Math.min(1, anchorX)));
+
+        params += ', 5, true, ' + anchorX + ', ' + pos.y + ', "' + escapeSQF(preset) + '", "' + escapeSQF(align) + '"';
+      }
+      params += ']';
+      return params + ' remoteExec ["SB_fnc_createSideTitle", 0];';
     }
 
     function escapeSQF(s) {
