@@ -5,6 +5,26 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.3.0-beta] — 2026-06-21
+
+### SideTitle Positioning & Preview Overhaul
+
+#### Added
+- **SideTitle position presets** — Right Center, Left Center, Center Top, Center Bottom, Left Bottom (plus Custom), selectable from the Position dropdown and honoured by `fn_createSideTitle`
+- **SideTitle typing options** — "Play click sounds while typing" (per-character `ReadoutClick`) and "Show typing cursor in game" (blinking caret during the reveal)
+- **Adaptive typewriter reveal** — `fn_createSideTitle` auto-paces the character reveal to fill each line's duration (~70% typing, per-character delay clamped to 25–120 ms) with an in-place fade-out
+
+#### Fixed
+- **SideTitle placement now reliable on any monitor** — the line is rendered centre-justified and positioned by its centre point, so placement no longer depends on the (monitor-dependent) text-control width. "Center Bottom" now genuinely centres the line instead of sitting left-of-centre, and left/right presets stay consistently inset from the edges regardless of aspect ratio
+- **SideTitle vertical placement** — "bottom" presets now sit near the bottom of the screen instead of mid-screen
+- **SideTitle preview was static** — the preview now renders the stacked title-over-subtitle typewriter the function actually produces (previously it showed the style preset's inline "Speaker: text" layout), and replays the reveal on edits instead of freezing after a single pass
+- **Preview frame overlap** — the 16:9 preview frame now fits within both the available width and height, so it no longer overflows into the sidebar or the tab panel on shorter (e.g. 1080p) windows, and scales up to fill tall/ultrawide displays (the fixed 960 px cap was removed)
+
+#### Changed
+- **Text Alignment no longer moves the SideTitle** — SideTitle placement is driven entirely by the Position preset; edge-aligned text is what caused the monitor-dependent drift. The preview matches the generated output (WYSIWYG). Regular `fn_createSubtitle` output is unchanged
+
+---
+
 ## [0.2.1-beta] — 2026-04-29
 
 ### Added

@@ -336,12 +336,17 @@
       align-items: center;
       justify-content: center;
       min-height: 0;
+      /* Establish a query container so the frame can size against this box's height */
+      container-type: size;
     }
 
     .preview-frame {
       position: relative;
-      width: 100%;
-      max-width: 960px;
+      flex: 0 0 auto;
+      /* Fit within BOTH the available width and height (whichever is the tighter limit),
+         preserving 16:9 — so the preview shrinks instead of overflowing into the sidebar /
+         tabs on short windows, yet grows to fill the space on tall/ultrawide displays. */
+      width: min(100cqw, calc(100cqh * 16 / 9));
       aspect-ratio: 16 / 9;
       background: #000;
       border: 1px solid var(--panel-border);
@@ -430,13 +435,21 @@
     }
 
     .subtitle-display.side-title .subtitle-text {
-      font-size: 1.5em;
-      overflow: hidden;
-      white-space: nowrap;
-      border-right: 2px solid rgba(255, 255, 255, 0.6);
-      animation: typing 2s steps(40, end), blink-caret 0.5s step-end infinite;
       display: inline-block;
       max-width: 100%;
+      white-space: normal;
+    }
+
+    /* Blinking caret, shown only while the JS typewriter is revealing the line */
+    .subtitle-display.side-title .subtitle-text.side-title-typing::after {
+      content: '';
+      display: inline-block;
+      width: 0;
+      height: 1em;
+      border-right: 2px solid rgba(255, 255, 255, 0.75);
+      margin-left: 2px;
+      vertical-align: text-bottom;
+      animation: blink-caret 0.5s step-end infinite;
     }
 
     .subtitle-display.visible {
@@ -504,16 +517,6 @@
       100% {
         opacity: 1;
         transform: translateY(0);
-      }
-    }
-
-    @keyframes typing {
-      from {
-        width: 0;
-      }
-
-      to {
-        width: 100%;
       }
     }
 
@@ -1533,7 +1536,8 @@
               <option value="center-bottom">Center Bottom</option>
               <option value="center-top">Center Top</option>
               <option value="left-bottom">Left Bottom</option>
-              <option value="right-center">Right Center (Side Title)</option>
+              <option value="left-center">Left Center</option>
+              <option value="right-center">Right Center</option>
               <option value="custom">Custom (drag on preview)</option>
             </select>
 
@@ -1577,10 +1581,20 @@
                 <label style="margin:0; cursor:pointer;" for="stripPunctuation">Strip punctuation from output</label>
               </div>
               <label>Output Format</label>
-              <select id="outputFormat" onchange="updatePreviewStyle(); generateSQF()">
+              <select id="outputFormat" onchange="updatePreviewStyle(); generateSQF(); toggleSideTitleOptions()">
                 <option value="subtitle">fn_createSubtitle</option>
                 <option value="sideTitle">fn_createSideTitle</option>
               </select>
+              <div id="sideTitleOptions" style="display:none; margin-top:4px;">
+                <div class="row-tight">
+                  <input type="checkbox" id="sideTitlePlayClicks" onchange="generateSQF()">
+                  <label style="margin:0; cursor:pointer;" for="sideTitlePlayClicks">Play click sounds while typing</label>
+                </div>
+                <div class="row-tight" style="margin-top:4px;">
+                  <input type="checkbox" id="sideTitleShowCursor" onchange="generateSQF()">
+                  <label style="margin:0; cursor:pointer;" for="sideTitleShowCursor">Show typing cursor in game</label>
+                </div>
+              </div>
               <label style="margin-top:6px;">Text Alignment</label>
               <select id="subtitleAlign" onchange="updatePreviewStyle(); generateSQF()">
                 <option value="center">Center</option>
@@ -1968,10 +1982,11 @@
     };
 
     const POSITION_PRESETS = {
-      'center-bottom': { left: '10%', top: 'auto', bottom: '18%', right: 'auto' },
-      'center-top': { left: '10%', top: '8%', bottom: 'auto', right: 'auto' },
-      'left-bottom': { left: '3%', top: 'auto', bottom: '18%', right: 'auto' },
-      'right-center': { left: 'auto', top: 'auto', bottom: '35%', right: '3%' },
+      'center-bottom': { left: '10%', top: 'auto', bottom: '30%', right: 'auto' },
+      'center-top':    { left: '10%', top: '12%',  bottom: 'auto', right: 'auto' },
+      'left-bottom':   { left: '3%',  top: 'auto', bottom: '30%', right: 'auto' },
+      'left-center':   { left: '2%',  top: 'auto',  bottom: '41%', right: 'auto' },
+      'right-center':  { left: 'auto', top: 'auto', bottom: '41%', right: '2%' },
     };
 
     // ═══════════════════════════════════════════════════════
@@ -2232,15 +2247,57 @@
       if (!p) return;
 
       const el = $('subtitleDisplay');
-      el.style.left = p.left;
-      el.style.top = p.top;
-      el.style.bottom = p.bottom;
-      el.style.right = p.right;
-      el.style.transform = '';
+      // Fully remove all position properties before applying new preset
+      el.style.removeProperty('left');
+      el.style.removeProperty('top');
+      el.style.removeProperty('bottom');
+      el.style.removeProperty('right');
+      el.style.removeProperty('transform');
+      void el.offsetWidth; // force reflow
+      if (p.left !== 'auto')   el.style.left   = p.left;
+      if (p.top !== 'auto')    el.style.top    = p.top;
+      if (p.bottom !== 'auto') el.style.bottom = p.bottom;
+      if (p.right !== 'auto')  el.style.right  = p.right;
+      updatePreviewStyle();
+      generateSQF();
+    }
+
+    // Lay out the side-title line to match fn_createSideTitle: a full-width line positioned
+    // horizontally by the preset (left / centre / right) and vertically by the preset band.
+    // (The SQF centre-justifies and places by the line's centre; for a single line the visible
+    // position is the same, so the preview stays WYSIWYG.)
+    function applySideTitlePreviewLayout() {
+      const disp = $('subtitleDisplay');
+      const key = $('positionPreset') ? $('positionPreset').value : 'custom';
+      if (key === 'custom') { disp.style.textAlign = getAlignment(); return; } // keep dragged box
+      disp.style.left = '0';
+      disp.style.right = '0';
+      disp.style.width = '100%';
+      disp.style.transform = 'none';
+      disp.style.textAlign = key.startsWith('left') ? 'left' : key.startsWith('right') ? 'right' : 'center';
+      if (key.includes('top'))         { disp.style.top = '12%';  disp.style.bottom = 'auto'; }
+      else if (key.includes('bottom')) { disp.style.top = 'auto'; disp.style.bottom = '16%'; }
+      else                             { disp.style.top = '44%';  disp.style.bottom = 'auto'; } // *-center
+    }
+
+    // Undo the side-title full-width override and restore the normal subtitle box position.
+    function clearSideTitlePreviewLayout() {
+      const disp = $('subtitleDisplay');
+      disp.style.removeProperty('width');
+      disp.style.transform = 'none';
+      const key = $('positionPreset') ? $('positionPreset').value : 'custom';
+      if (key === 'custom') return;
+      const p = POSITION_PRESETS[key];
+      if (!p) return;
+      ['left', 'top', 'bottom', 'right'].forEach(s => disp.style.removeProperty(s));
+      if (p.left !== 'auto')   disp.style.left   = p.left;
+      if (p.top !== 'auto')    disp.style.top    = p.top;
+      if (p.bottom !== 'auto') disp.style.bottom = p.bottom;
+      if (p.right !== 'auto')  disp.style.right  = p.right;
     }
 
     // Get subtitle position as normalized 0-1 fractions of the preview frame
-    // Returns { x, y, w } for safezone-based SQF positioning
+    // Returns { x, y, w, h } for safezone-based SQF positioning
     function getSubtitlePosition() {
       const sub = $('subtitleDisplay');
       const frame = $('previewFrame');
@@ -2250,10 +2307,35 @@
       const innerW = fRect.width - 2 * bw;
       const innerH = fRect.height - 2 * bw;
 
+      const presetKey = $('positionPreset') ? $('positionPreset').value : 'custom';
+      const preset = POSITION_PRESETS[presetKey];
+      // For fixed presets, compute normalized coordinates directly from preset values
+      // so generated SQF reliably reflects dropdown changes.
+      if (preset && presetKey !== 'custom' && innerW > 0 && innerH > 0) {
+        const w = sRect.width / innerW;
+        const h = sRect.height / innerH;
+
+        const leftPct = preset.left !== 'auto' ? parseFloat(preset.left) / 100 : null;
+        const rightPct = preset.right !== 'auto' ? parseFloat(preset.right) / 100 : null;
+        const topPct = preset.top !== 'auto' ? parseFloat(preset.top) / 100 : null;
+        const bottomPct = preset.bottom !== 'auto' ? parseFloat(preset.bottom) / 100 : null;
+
+        const x = leftPct !== null ? leftPct : (rightPct !== null ? (1 - rightPct - w) : (sRect.left - fRect.left - bw) / innerW);
+        const y = topPct !== null ? topPct : (bottomPct !== null ? (1 - bottomPct - h) : (sRect.top - fRect.top - bw) / innerH);
+
+        return {
+          x: round2(Math.max(0, x)),
+          y: round2(Math.max(0, y)),
+          w: round2(w),
+          h: round2(h)
+        };
+      }
+
       return {
         x: round2(Math.max(0, (sRect.left - fRect.left - bw) / innerW)),
         y: round2(Math.max(0, (sRect.top - fRect.top - bw) / innerH)),
-        w: round2(sRect.width / innerW)
+        w: round2(sRect.width / innerW),
+        h: round2(sRect.height / innerH)
       };
     }
 
@@ -2352,14 +2434,29 @@
       // Apply text alignment and side-title class
       const isSide = $('outputFormat').value === 'sideTitle';
       const align = getAlignment();
-      titleEl.style.textAlign = align;
-      textEl.style.textAlign = align;
       display.classList.toggle('side-title', isSide);
+      if (isSide) {
+        // Side title: render as a full-width line whose horizontal screen position comes from
+        // the position preset — mirrors fn_createSideTitle, which places the centre-justified
+        // line by its centre point (so the preview matches the game).
+        applySideTitlePreviewLayout();
+        scheduleSideTypewriter();
+      } else {
+        display.style.textAlign = align;
+        clearSideTitlePreviewLayout();
+        restartTypingAnimation(); // just stops any active reveal
+      }
+      toggleSideTitleOptions();
 
       // Apply preset CSS class
       const presetKey = $('stylePreset').value;
       const newClass = STYLE_PRESETS[presetKey]?.cssClass || '';
-      if (newClass) {
+      if (isSide) {
+        // Side titles always render stacked typewriter — ignore inline/decorative preset
+        // layouts (e.g. preset-cod-ally's flex "Title: text"). Colours/font/sizes still apply
+        // via inline styles, so the preset's look is preserved; only its layout class is dropped.
+        if (currentPresetClass) { display.classList.remove(currentPresetClass); currentPresetClass = ''; }
+      } else if (newClass) {
         // Explicitly selected preset — apply its class
         if (currentPresetClass && currentPresetClass !== newClass) display.classList.remove(currentPresetClass);
         display.classList.add(newClass);
@@ -2386,6 +2483,8 @@
       // Reset
       display.classList.remove('visible', 'fade-in', 'fade-out');
       void display.offsetWidth; // force reflow
+
+      if ($('outputFormat').value === 'sideTitle') restartTypingAnimation();
 
       if (fade) {
         // Fade in
@@ -2460,21 +2559,24 @@
 
       const isSide = format === 'sideTitle';
       display.classList.toggle('side-title', isSide);
-      const playAlign = getAlignment();
-      titleEl.style.textAlign = playAlign;
-      textEl.style.textAlign = playAlign;
+      display.style.textAlign = getAlignment();
 
       const sameSpeaker = (title === currentDisplayedTitle) && display.classList.contains('visible');
 
       if (sameSpeaker) {
-        textEl.textContent = processText(subtitle);
-        textEl.classList.remove('text-swap');
-        void textEl.offsetWidth;
-        textEl.classList.add('text-swap');
+        // Side title owns subtitle text via the typewriter; skip the direct set + text-swap.
+        if (!isSide) {
+          textEl.textContent = processText(subtitle);
+          textEl.classList.remove('text-swap');
+          void textEl.offsetWidth;
+          textEl.classList.add('text-swap');
+        }
       } else {
         titleEl.textContent = processText(title);
-        textEl.textContent = processText(subtitle);
-        textEl.classList.remove('text-swap');
+        if (!isSide) {
+          textEl.textContent = processText(subtitle);
+          textEl.classList.remove('text-swap');
+        }
 
         display.classList.remove('visible', 'fade-in', 'fade-out');
         void display.offsetWidth;
@@ -2490,12 +2592,69 @@
         }
       }
 
+      // Side title: type the active line out (the entry's line, not the edit field).
+      if (isSide) restartTypingAnimation(subtitle);
+
       currentDisplayedTitle = title;
     }
 
     function hideSubtitle() {
       currentDisplayedTitle = '';
       previewFadeOut();
+    }
+
+    // Side-title typewriter (preview). JS-driven so it reliably re-types instead of freezing
+    // at full width like the old one-shot CSS animation. Plays through once, then holds the
+    // full line. Reveal pace mirrors fn_createSideTitle.sqf (≈70% of duration spent typing,
+    // per-char delay clamped 25–120 ms).
+    let sideTypeTimer = null;
+    let sideTypeDebounce = null;
+
+    // Debounced trigger for live edits, so typing in the settings fields doesn't restart the
+    // reveal on every keystroke. Discrete events (Preview button, timeline ticks) call
+    // restartTypingAnimation() directly for an immediate replay.
+    function scheduleSideTypewriter() {
+      if (sideTypeDebounce) clearTimeout(sideTypeDebounce);
+      sideTypeDebounce = setTimeout(restartTypingAnimation, 350);
+    }
+
+    // textOverride: line to type (used by timeline playback, which passes the active entry's
+    // line); when omitted, the Subtitle edit field is used.
+    function restartTypingAnimation(textOverride) {
+      if (sideTypeDebounce) { clearTimeout(sideTypeDebounce); sideTypeDebounce = null; }
+      if (sideTypeTimer) { clearInterval(sideTypeTimer); sideTypeTimer = null; }
+
+      const textEl = $('subTextEl');
+      if (!textEl) return;
+
+      // Only animate in side-title mode; otherwise leave the full line in place.
+      if (!$('outputFormat') || $('outputFormat').value !== 'sideTitle') {
+        textEl.classList.remove('side-title-typing');
+        return;
+      }
+
+      const src = (textOverride !== undefined && textOverride !== null) ? textOverride : ($('previewSubtitle').value || '');
+      const full = processText(src);
+      const chars = Array.from(full); // surrogate-safe
+      const n = chars.length;
+      if (n === 0) { textEl.textContent = ''; textEl.classList.remove('side-title-typing'); return; }
+
+      const dur = parseFloat($('previewDuration').value) || 5;
+      const delay = Math.min(120, Math.max(25, (dur * 0.7 * 1000) / n));
+
+      textEl.classList.add('side-title-typing'); // blinking caret while revealing
+      let i = 0;
+      textEl.textContent = '';
+      sideTypeTimer = setInterval(() => {
+        i++;
+        textEl.textContent = chars.slice(0, i).join('');
+        if (i >= n) {
+          clearInterval(sideTypeTimer);
+          sideTypeTimer = null;
+          textEl.textContent = full;                    // hold full line (play once)
+          textEl.classList.remove('side-title-typing'); // remove caret when done
+        }
+      }, delay);
     }
 
     // Draggable + Resizable subtitle positioning
@@ -2565,10 +2724,14 @@
       document.addEventListener('mouseup', function () {
         if (resizing) {
           resizing = false;
+          generateSQF();
           return;
         }
-        dragging = false;
-        sub.classList.remove('dragging');
+        if (dragging) {
+          dragging = false;
+          sub.classList.remove('dragging');
+          generateSQF();
+        }
       });
     })();
 
@@ -3173,7 +3336,7 @@
         if (format === 'subtitle') {
           code += formatSubtitleCall(strip ? processText(title) : title, strip ? processText(subtitle) : subtitle, dur, tc, sc, ts, ss, font, true, sqfMode, pos, getActiveLayout(), getActiveTitleTransform()) + '\n';
         } else {
-          code += formatSideTitleCall(strip ? processText(title) : title, strip ? processText(subtitle) : subtitle, tc) + '\n';
+          code += formatSideTitleCall(strip ? processText(title) : title, strip ? processText(subtitle) : subtitle, tc, pos, dur) + '\n';
         }
 
         output.textContent = code;
@@ -3357,7 +3520,7 @@
             if (format === 'subtitle') {
               code += '  ' + formatSubtitleCall(entryTitle, entrySub, entry.duration, tc, sc, ts, ss, font, fadeOut, sqfMode, pos, getActiveLayout(), getActiveTitleTransform()) + '\n';
             } else {
-              code += '  ' + formatSideTitleCall(entryTitle, entrySub, tc) + '\n';
+              code += '  ' + formatSideTitleCall(entryTitle, entrySub, tc, pos, entry.duration) + '\n';
             }
             code += '  sleep ' + round2(entry.duration) + ';\n';
 
@@ -3566,8 +3729,50 @@
       return params + ' remoteExec ["SB_fnc_createSubtitle", 0];';
     }
 
-    function formatSideTitleCall(title, subtitle, color) {
-      return '["' + escapeSQF(title) + '", "' + escapeSQF(subtitle) + '", "' + color + '"] remoteExec ["SB_fnc_createSideTitle", 0];';
+    function formatSideTitleCall(title, subtitle, color, pos, duration) {
+      const dur = round2(duration || 5);
+      const playClicks = $('sideTitlePlayClicks') && $('sideTitlePlayClicks').checked;
+      const showCursor = $('sideTitleShowCursor') && $('sideTitleShowCursor').checked;
+      let params = '["' + escapeSQF(title) + '", "' + escapeSQF(subtitle) + '", "' + color + '"';
+      const align = getAlignment();
+      const preset = $('positionPreset') ? $('positionPreset').value : 'custom';
+      let anchorX = 0;
+      let anchorY = 0;
+
+      // Convert preview box to text anchors based on alignment.
+      // anchorX: left/center/right edge of box depending on text alignment.
+      // anchorY: vertical centre of box — BIS_fnc_dynamicText positions from centre.
+      if (pos && pos.x !== undefined) {
+        anchorX = pos.x;
+        if (align === 'right') {
+          anchorX = pos.x + pos.w;
+        } else if (align === 'center') {
+          anchorX = pos.x + (pos.w / 2);
+        }
+        anchorX = round2(Math.max(0, Math.min(1, anchorX)));
+        anchorY = round2(pos.y + (pos.h || 0) / 2);
+      }
+
+      params += ', ' + dur + ', true';
+      params += ', ' + anchorX + ', ' + anchorY;
+      params += ', "' + escapeSQF(preset) + '", "' + escapeSQF(align) + '"';
+
+      // Optional trailing params: playClicks (param 9), showCursor (param 10)
+      if (playClicks || showCursor) {
+        params += ', ' + (playClicks ? 'true' : 'false');
+      }
+      if (showCursor) {
+        params += ', true';
+      }
+
+      params += ']';
+      return params + ' remoteExec ["SB_fnc_createSideTitle", 0];';
+    }
+
+    function toggleSideTitleOptions() {
+      const isSide = $('outputFormat') && $('outputFormat').value === 'sideTitle';
+      const el = $('sideTitleOptions');
+      if (el) el.style.display = isSide ? 'block' : 'none';
     }
 
     function escapeSQF(s) {
